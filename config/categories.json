@@ -1,0 +1,74 @@
+{
+  "categories": [
+    {
+      "id": "data_bi",
+      "name": "Data & BI",
+      "output": "data_bi_roles_today.csv",
+      "target_roles": [
+        "Data Analyst",
+        "Business Intelligence Analyst",
+        "BI Analyst",
+        "Reporting Analyst",
+        "Marketing Analyst",
+        "Business Analyst",
+        "Operations Analyst",
+        "Insights Analyst",
+        "Dashboard Developer"
+      ],
+      "positive_keywords": ["sql", "excel", "power bi", "tableau", "dashboard", "reporting", "analytics", "insights"],
+      "negative_keywords": ["senior manager", "principal", "staff", "lead data scientist", "machine learning engineer"]
+    },
+    {
+      "id": "research",
+      "name": "Research",
+      "output": "research_roles_today.csv",
+      "target_roles": [
+        "Research Analyst",
+        "Market Research Analyst",
+        "Competitive Intelligence Analyst",
+        "Consumer Insights Analyst",
+        "Secondary Research Analyst",
+        "Equity Research Analyst"
+      ],
+      "positive_keywords": ["research", "market", "secondary research", "competitive intelligence", "consumer insights", "equity"],
+      "negative_keywords": ["senior manager", "principal", "director", "phd required"]
+    },
+    {
+      "id": "excel_mis",
+      "name": "Excel / MIS",
+      "output": "excel_sheets_roles_today.csv",
+      "target_roles": [
+        "MIS Executive",
+        "MIS Analyst",
+        "Excel Specialist",
+        "Google Sheets Specialist",
+        "Spreadsheet Developer",
+        "Excel Analyst",
+        "Excel Consultant",
+        "Workbook Designer",
+        "Data Operations Analyst",
+        "Finance Operations Analyst",
+        "Financial Operations Analyst",
+        "Analyst Finance Operations",
+        "Revenue Operations Analyst",
+        "Sales Operations Analyst",
+        "Business Operations Analyst",
+        "Business Finance",
+        "Business Finance Analyst",
+        "Commissions Analyst",
+        "Recon Analyst",
+        "Operations Analyst",
+        "Operations Specialist",
+        "Order Management",
+        "Reconciliation Analyst",
+        "Procurement Analyst",
+        "Cash Treasury Analyst",
+        "KYC Analyst",
+        "Accounts Receivable",
+        "Accounts Payable"
+      ],
+      "positive_keywords": ["excel", "mis", "spreadsheet", "google sheets", "vlookup", "pivot", "dashboard", "reporting"],
+      "negative_keywords": ["senior manager", "principal", "director"]
+    }
+  ]
+}

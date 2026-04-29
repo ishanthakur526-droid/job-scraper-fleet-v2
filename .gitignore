@@ -1,0 +1,32 @@
+# Generated scraper output
+outputs/
+outputs_search/
+.test_tmp/
+
+# Runtime-discovered board registry. The workflow recreates this as needed.
+config/discovered_boards.json
+
+# Python cache and tooling
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments and local secrets
+.venv/
+venv/
+env/
+.env
+.env.*
+!.env.example
+
+# Local logs and OS/editor files
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

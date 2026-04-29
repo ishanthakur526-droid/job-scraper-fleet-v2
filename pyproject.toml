@@ -1,0 +1,11 @@
+[project]
+name = "job-scraper-fleet-v2"
+version = "0.1.0"
+description = "Deterministic job scraping workflow for India-focused early-career analyst roles."
+requires-python = ">=3.11"
+dependencies = [
+  "beautifulsoup4>=4.12",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
