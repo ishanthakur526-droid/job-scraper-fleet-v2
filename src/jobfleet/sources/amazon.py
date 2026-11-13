@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 from urllib.parse import urlencode
 
+from ..geo import iso3
 from ..models import Board, RawJob, legacy_url_key
 from ..text import clean_html, normalize_space
 from .base import SourceAdapter, iso_date
@@ -23,12 +24,21 @@ class AmazonJobsAdapter(SourceAdapter):
 
     def list_jobs(self, board: Board) -> list[RawJob]:
         cap = int(board.options.get("max_jobs", 300))
-        country = str(board.options.get("country", "IND"))
+        configured = board.options.get("country")
+        countries = [str(configured)] if configured else [iso3(c) for c in self.ctx.countries] or [""]
         jobs: list[RawJob] = []
         seen: set[str] = set()
+        for country in countries:
+            self._collect(board, country, cap, jobs, seen)
+        return jobs
+
+    def _collect(self, board: Board, country: str, cap: int, jobs: list[RawJob], seen: set[str]) -> None:
         offset = 0
         while offset < cap and self.time_left():
-            query = urlencode({"base_query": board.token, "country": country, "offset": offset, "result_limit": PAGE_SIZE})
+            params: dict = {"base_query": board.token}
+            if country:
+                params["country"] = country
+            query = urlencode({**params, "offset": offset, "result_limit": PAGE_SIZE})
             data = self.http.get_json(f"{BASE}/en/search.json?{query}")
             data = data if isinstance(data, dict) else {}
             page = [item for item in data.get("jobs") or [] if isinstance(item, dict)]
@@ -41,7 +51,6 @@ class AmazonJobsAdapter(SourceAdapter):
             offset += PAGE_SIZE
             if not page or offset >= hits:
                 break
-        return jobs
 
     def _job(self, board: Board, item: dict) -> RawJob | None:
         icims = str(item.get("id_icims") or "").strip()

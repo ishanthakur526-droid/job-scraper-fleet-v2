@@ -119,11 +119,11 @@ def test_adjacent_and_aggregator_routes(classifier):
 
 def test_indiana_job_is_rejected_as_non_india(classifier):
     result = classifier.evaluate(job("Data Analyst", location="Indianapolis, Indiana"))
-    assert result.decision == "reject" and result.reason == "non_india"
+    assert result.decision == "reject" and result.reason == "outside_your_countries"
 
 
 def test_unknown_location_rejected_unless_inferred(classifier):
-    assert classifier.evaluate(job("Data Analyst", "SQL dashboards.", location="2 Locations")).reason == "geo_unknown"
+    assert classifier.evaluate(job("Data Analyst", "SQL dashboards.", location="2 Locations")).reason == "location_unknown"
     inferred = classifier.evaluate(job("Data Analyst", "This role is based in Pune, India. SQL dashboards and reporting.", location="Remote"))
     assert inferred.decision == "accept" and "inferred_location" in inferred.review_flags
 

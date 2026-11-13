@@ -10,10 +10,11 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
 from .experience import DEFAULT_MAX_YEARS, ExperienceResult, parse_experience
-from .geo import GeoResult, resolve
+from .geo import CityFilter, GeoResult, is_remote, resolve, segment_country, split_segments
+from .geo import set_targets as set_geo_targets
 from .levels import DOMAINS, LEVEL_3_PLUS, LEVELS
 from .models import Category, RawJob
 from .profile import Rules, default_rules
@@ -95,13 +96,20 @@ class Classifier:
         rules: Rules | None = None,
         min_years: float = 0,
         max_years: float = DEFAULT_MAX_YEARS,
+        countries: Iterable[str] = ("IN",),
+        remote: str = "include",
+        cities: Iterable[str] = (),
     ):
         self.categories = [c for c in categories if c.route == "main"]
         self.adjacent = adjacent
         self.rules = rules or default_rules(self.all_categories)
         self.min_years = float(min_years)
         self.max_years = float(max_years)
+        self.countries = tuple(str(c).upper() for c in countries)
+        self.remote = remote
+        self.city_filter = CityFilter(cities)
         set_title_abbreviations(self.rules.abbreviations)
+        set_geo_targets(self.countries)
         self._roles = {c.id: _roles(c) for c in self.all_categories}
         self._domains = [DOMAINS[name] for name in DOMAINS if name in set(self.rules.excluded_domains)]
         senior_words = "|".join(re.escape(w) for w in self.rules.senior_only_for)
@@ -109,7 +117,16 @@ class Classifier:
 
     @classmethod
     def from_profile(cls, profile: Profile) -> Classifier:
-        return cls(profile.families, profile.adjacent, rules=profile.rules, min_years=profile.min_years, max_years=profile.max_years)
+        return cls(
+            profile.families,
+            profile.adjacent,
+            rules=profile.rules,
+            min_years=profile.min_years,
+            max_years=profile.max_years,
+            countries=profile.country_codes,
+            remote=profile.remote,
+            cities=profile.cities,
+        )
 
     @property
     def all_categories(self) -> list[Category]:
@@ -271,12 +288,17 @@ class Classifier:
         if domain:
             return Evaluation(job, "reject", reason=f"non_target_title:{domain}", stage="title")
 
-        geo = resolve(job.location, job.country_codes, job.locations, job.description)
-        if geo.status == "unknown" and flags.get("geo_hint") == "india":
-            geo = GeoResult("india", "inferred", "board search filter")
-        if geo.status != "india":
-            reason = "non_india" if geo.status == "foreign" else "geo_unknown"
+        geo = self.locate(job)
+        if geo.status != "target":
+            reason = "outside_your_countries" if geo.status == "foreign" else "location_unknown"
             return Evaluation(job, "reject", reason=reason, stage="geo", geo=geo)
+        remote_job = any(is_remote(text) for text in (job.location, job.title, *job.locations))
+        if self.remote == "only" and not remote_job:
+            return Evaluation(job, "reject", reason="not_remote", stage="geo", geo=geo)
+        if self.remote == "exclude" and remote_job and geo.basis != "structured" and not self._onsite_place(job):
+            return Evaluation(job, "reject", reason="remote_excluded", stage="geo", geo=geo)
+        if self.city_filter and not (remote_job and self.remote != "exclude") and not self.city_filter.matches([job.location, *job.locations]):
+            return Evaluation(job, "reject", reason="outside_your_cities", stage="geo", geo=geo)
 
         experience = parse_experience(
             job.requirements_text or job.description, job.preferred_text, title=job.title, min_years=self.min_years, max_years=self.max_years
@@ -354,6 +376,20 @@ class Classifier:
             experience=experience,
             matched_terms=best.matched if best else [],
         )
+
+    def locate(self, job: RawJob) -> GeoResult:
+        if not self.countries:  # "anywhere" (remote-only profiles)
+            return GeoResult("target", "none", "any country")
+        geo = resolve(job.location, job.country_codes, job.locations, job.description, self.countries)
+        hint = (job.flags or {}).get("geo_hint")
+        if geo.status == "unknown" and (hint == "target" or (hint == "india" and "IN" in self.countries)):  # "india": v3 raw dumps
+            geo = GeoResult("target", "inferred", "board search filter")
+        return geo
+
+    @staticmethod
+    def _onsite_place(job: RawJob) -> bool:
+        """A remote-flagged job that also names an office ("Bengaluru (Hybrid/Remote)") is not fully remote."""
+        return any(segment_country(seg) for text in (job.location, *job.locations) for seg in split_segments(text))
 
     def _accept(self, job, winner: CategoryScore, route, geo, experience, review_flags, notes, also) -> Evaluation:
         tier = "high_confidence" if winner.score >= HIGH_CONFIDENCE_THRESHOLD and not review_flags else "needs_review"

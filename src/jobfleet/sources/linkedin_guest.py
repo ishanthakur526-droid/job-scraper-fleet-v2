@@ -13,6 +13,7 @@ from urllib.parse import urlencode
 
 from bs4 import BeautifulSoup
 
+from ..geo import country_name
 from ..http import FetchError
 from ..models import Board, RawJob
 from ..text import clean_html, normalize_space
@@ -21,6 +22,8 @@ from .base import SourceAdapter, iso_date
 SEARCH = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
 DETAIL = "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{job_id}"
 INDIA_GEO_ID = "102713980"
+# LinkedIn's experience filter per profile level: 1 internship, 2 entry, 3 associate, 4 mid-senior, 5 director, 6 executive.
+EXPERIENCE_FILTER = {"student": "1,2", "early_career": "2,3", "mid": "3,4", "senior": "4,5", "leadership": "5,6"}
 
 
 class LinkedInGuestAdapter(SourceAdapter):
@@ -35,18 +38,19 @@ class LinkedInGuestAdapter(SourceAdapter):
         window_seconds = int(options.get("posted_within_seconds", 259200))  # 3 days covers weekends
         requests_used = 0
         cards: dict[str, dict] = {}
-        for query in queries:
+        places = [country_name(c) for c in self.ctx.countries] or ["Worldwide"]
+        for place, query in ((p, q) for p in places for q in queries):
             for page in range(pages):
                 if requests_used >= budget or not self.time_left():
                     break
-                params = {
-                    "keywords": query,
-                    "location": "India",
-                    "geoId": INDIA_GEO_ID,
+                params = {"keywords": query, "location": place}
+                if place == "India":
+                    params["geoId"] = INDIA_GEO_ID
+                params.update({
                     "f_TPR": f"r{window_seconds}",
-                    "f_E": str(options.get("experience_filter", "2,3")),  # entry level, associate (no internships)
+                    "f_E": str(options.get("experience_filter") or EXPERIENCE_FILTER.get(self.ctx.level, "2,3")),
                     "start": page * 10,
-                }
+                })
                 html = self._get(f"{SEARCH}?{urlencode(params)}")
                 requests_used += 1
                 if html is None:

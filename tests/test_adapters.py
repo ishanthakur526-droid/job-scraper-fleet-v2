@@ -159,7 +159,7 @@ def test_deloitte_listing_no_longer_fakes_india_in_description():
     })
     jobs = adapter_for("paginated_html", http).list_jobs(Board("Deloitte", "paginated_html", token))
     assert "India" not in jobs[0].description
-    assert jobs[0].flags.get("geo_hint") == "india" and jobs[0].location == ""
+    assert jobs[0].flags.get("geo_hint") == "target" and jobs[0].location == ""
     assert resolve(jobs[1].location).status == "foreign"  # Indianapolis row is not hinted as India
     assert "geo_hint" not in jobs[1].flags
 

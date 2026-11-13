@@ -133,19 +133,22 @@ class SmartRecruitersAdapter(SourceAdapter):
     def list_jobs(self, board: Board) -> list[RawJob]:
         token = board.token
         base = f"https://api.smartrecruiters.com/v1/companies/{token}/postings"
-        country = str(board.options.get("country", "in"))
+        configured = board.options.get("country")
+        countries = [str(configured)] if configured else [c.lower() for c in self.ctx.countries] or [""]
         cap = int(board.options.get("max_jobs", 400))
         items: list[dict] = []
-        offset = 0
-        while offset < cap and self.time_left():
-            data = self.http.get_json(f"{base}?country={country}&limit={self.PAGE}&offset={offset}")
-            data = data if isinstance(data, dict) else {}
-            content = data.get("content") or []
-            items.extend(item for item in content if isinstance(item, dict))
-            total = int(data.get("totalFound", 0) or 0)
-            offset += self.PAGE
-            if not content or offset >= total:
-                break
+        for country in countries:
+            offset = 0
+            country_param = f"country={country}&" if country else ""
+            while offset < cap and self.time_left():
+                data = self.http.get_json(f"{base}?{country_param}limit={self.PAGE}&offset={offset}")
+                data = data if isinstance(data, dict) else {}
+                content = data.get("content") or []
+                items.extend(item for item in content if isinstance(item, dict))
+                total = int(data.get("totalFound", 0) or 0)
+                offset += self.PAGE
+                if not content or offset >= total:
+                    break
         return self.map_parallel(lambda item: self._job(board, base, item), items[:cap])
 
     def _job(self, board: Board, base: str, item: dict) -> RawJob:

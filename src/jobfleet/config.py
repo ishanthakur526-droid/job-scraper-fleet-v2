@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote_plus
 
 from .models import Board
 
@@ -20,8 +21,12 @@ def _board(item: dict[str, Any]) -> Board:
 
 
 def load_boards(config_dir: Path, include_disabled: bool = False) -> tuple[list[Board], list[str]]:
-    data = _read_json(config_dir / "boards.json")
-    boards = [_board(item) for item in data.get("boards", [])]
+    """Companies to check: config/companies.json (v3 name: boards.json) plus scout/discovery finds."""
+    path = config_dir / "companies.json"
+    if not path.exists():
+        path = config_dir / "boards.json"
+    data = _read_json(path)
+    boards = [_board(item) for item in data.get("companies", data.get("boards", []))]
     discovered_path = config_dir / "discovered_boards.json"
     if discovered_path.exists():
         boards.extend(_board(item) for item in _read_json(discovered_path).get("boards", []))
@@ -56,6 +61,41 @@ def load_discovered_boards(config_dir: Path) -> list[Board]:
     if not path.exists():
         return []
     return [_board(item) for item in _read_json(path).get("boards", [])]
+
+
+def expand_boards(boards: list[Board], countries: list[str] | tuple[str, ...], keywords: list[str] | tuple[str, ...]) -> list[Board]:
+    """Fit the company list to a profile.
+
+    - an entry with ``countries`` (e.g. an India-only careers site) is skipped unless the profile looks there
+    - ``{keyword}`` in the token or options becomes one entry per profile search keyword (``max_keywords``, default 3)
+    - ``{country}`` becomes one entry per profile country name (at most 3)
+    """
+    from .geo import country_name
+
+    wanted = {c.upper() for c in countries}
+    names = [country_name(c) for c in countries][:3] or [""]
+    output: list[Board] = []
+    for board in boards:
+        if board.countries and wanted and not wanted & {c.upper() for c in board.countries}:
+            continue
+        variants = [board]
+        if _mentions(board, "{keyword}"):
+            limit = int(board.options.get("max_keywords", 3))
+            variants = [_fill(b, "{keyword}", kw) for b in variants for kw in list(keywords)[:limit]]
+        if _mentions(board, "{country}"):
+            variants = [_fill(b, "{country}", name) for b in variants for name in names]
+        output.extend(variants)
+    return dedupe_boards(output)
+
+
+def _mentions(board: Board, placeholder: str) -> bool:
+    return placeholder in board.token or placeholder in json.dumps(board.options)
+
+
+def _fill(board: Board, placeholder: str, value: str) -> Board:
+    options = json.loads(json.dumps(board.options).replace(placeholder, json.dumps(value)[1:-1]))
+    token = board.token.replace(placeholder, quote_plus(value) if board.token.startswith("http") else value)
+    return dataclasses.replace(board, token=token, options=options)
 
 
 def dedupe_boards(boards: list[Board]) -> list[Board]:

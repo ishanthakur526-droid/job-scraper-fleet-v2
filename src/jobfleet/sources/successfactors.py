@@ -107,7 +107,7 @@ def _listing_location(anchor) -> str:
     cells = [normalize_space(cell.get_text(" ", strip=True)) for cell in row.find_all(["td", "th"])]
     candidates = [cell for cell in cells if cell and cell.lower() != title]
     for cell in candidates:
-        if classify_segment(cell)[0] == "india":
+        if classify_segment(cell)[0] == "target":
             return cell
     return candidates[0] if candidates else ""
 

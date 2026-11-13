@@ -11,7 +11,7 @@ from . import __version__
 from .board_discovery import discover_boards_by_search, load_candidates_file, verify_company_candidates
 from .canary import run_canaries
 from .classifier import Classifier
-from .config import load_boards
+from .config import expand_boards, load_boards
 from .discovery import build_queries, discover_urls
 from .exporters import export_category, export_new_only, export_overflow, export_quality_tiers, export_rejected_jobs, export_review_file
 from .http import HttpClient, OfflineHttpClient
@@ -121,10 +121,18 @@ def run(args: argparse.Namespace, run_id_value: str) -> int:
         board_budget_s=args.board_budget,
         max_per_category=args.max_per_category,
         per_company_cap=args.per_company_cap,
+        countries=tuple(profile.country_codes),
+        keywords=tuple(profile.search_keywords),
+        level=profile.level,
     )
-    boards, seed_urls = load_boards(args.config_dir)
-    if not args.include_linkedin:
-        boards = [b for b in boards if b.source != "linkedin_guest"]
+
+    def company_list() -> tuple[list, list[str]]:
+        loaded, seeds = load_boards(args.config_dir)
+        if not args.include_linkedin:
+            loaded = [b for b in loaded if b.source != "linkedin_guest"]
+        return expand_boards(loaded, profile.country_codes, profile.search_keywords), seeds
+
+    boards, seed_urls = company_list()
     runner = ClaudeRunner(
         output_dir / "llm_sandbox",
         configured_exe=str(llm_config.get("claude_exe") or ""),
@@ -148,9 +156,7 @@ def run(args: argparse.Namespace, run_id_value: str) -> int:
             result = discover_boards_by_search(args.config_dir, output_dir, http, classifier, boards, queries, state)
             log.info("Board discovery: %s added, %s checked", len(result.added), result.verified)
         if args.company_candidates or args.discover_boards:
-            boards, seed_urls = load_boards(args.config_dir)
-            if not args.include_linkedin:
-                boards = [b for b in boards if b.source != "linkedin_guest"]
+            boards, seed_urls = company_list()
         quarantined = state.quarantined()
         log.info("Collecting from %s boards (%s quarantined) with %s workers...", len(boards), len(quarantined), args.workers)
         jobs, health = pipeline.collect_from_boards(boards, quarantined)

@@ -43,6 +43,7 @@ class Board:
     aggregator: bool = False
     options: dict = field(default_factory=dict)
     note: str = ""
+    countries: list[str] = field(default_factory=list)  # ISO2 codes a country-specific careers site serves
 
     @property
     def key(self) -> str:

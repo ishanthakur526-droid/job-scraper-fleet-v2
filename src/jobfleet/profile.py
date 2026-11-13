@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from .geo import country_code, country_names
 from .levels import ACTIONS, ALL_LEVEL_NAMES, DEFAULT_YEARS, DOMAINS, LEVEL_PRESETS, level_actions
 from .models import Category
 
@@ -146,6 +147,15 @@ def profile_from_dict(data: dict[str, Any]) -> Profile:
         problems.append(f"[location] remote must be one of {', '.join(REMOTE_POLICIES)} (got '{remote}').")
     if not countries and remote != "only":
         problems.append("[location] countries is empty. Add at least one country, e.g. countries = [\"India\"] (or set remote = \"only\").")
+    country_codes: list[str] = []
+    for country in countries:
+        code = country_code(country)
+        if code:
+            country_codes.append(code)
+            continue
+        guess = closest(country, country_names() + ["USA", "UK", "UAE"])
+        hint = f" Did you mean '{guess}'?" if guess else " Use the English country name, e.g. \"Germany\"."
+        problems.append(f"[location] '{country}' is not a country I know.{hint}")
 
     level = str(experience.get("level", "early_career")).strip().lower()
     if level not in LEVEL_PRESETS:
@@ -226,6 +236,7 @@ def profile_from_dict(data: dict[str, Any]) -> Profile:
         search_keywords=search_keywords,
         rules=rules,
         ai=ai,
+        country_codes=list(dict.fromkeys(country_codes)),
     )
 
 
