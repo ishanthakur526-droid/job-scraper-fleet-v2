@@ -32,7 +32,7 @@ Each list keeps the original five columns first (`Company, Exact Role Name, Expe
 
 ```mermaid
 flowchart LR
-  A[84 career boards] -->|parallel, polite, Chrome TLS| B[Raw jobs + raw dump]
+  A[85 career boards] -->|parallel, polite, Chrome TLS| B[Raw jobs + raw dump]
   B --> C[Title gate<br/>seniority, entry programmes, IT/sales]
   C --> D[India geo resolver]
   D --> E[Experience parser<br/>0-3 years rule]
