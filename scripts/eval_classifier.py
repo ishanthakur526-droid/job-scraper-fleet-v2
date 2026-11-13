@@ -45,7 +45,7 @@ def sample(args) -> None:
     rng = random.Random(7)
     strata: dict[str, list] = defaultdict(list)
     for ev in evaluations:
-        if ev.stage in ("prefilter",) or ev.reason.startswith(("excluded_entry", "non_india")):
+        if ev.stage in ("prefilter",) or ev.reason.startswith(("excluded_entry", "outside_your_countries")):
             continue
         strata["accepted" if ev.decision == "accept" else ev.reason.split(":")[0]].append(ev)
     quota = {"accepted": int(args.n * 0.45), "possible": int(args.n * 0.15)}

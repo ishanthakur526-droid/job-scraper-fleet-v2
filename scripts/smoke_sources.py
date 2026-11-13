@@ -1,6 +1,6 @@
 """Live smoke test: one board per source, small time budget, plus a link check.
 
-    python scripts/smoke_sources.py            # every source in config/boards.json
+    python scripts/smoke_sources.py            # every source in config/companies.json
     python scripts/smoke_sources.py workday    # only the named sources
 
 Hits real websites; not part of the unit tests or CI.

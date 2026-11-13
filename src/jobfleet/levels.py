@@ -75,7 +75,9 @@ LEVEL_PRESETS: dict[str, dict[str, str]] = {
     },
     "mid": {
         "intern": "exclude", "entry_program": "exclude", "junior": "allow", "junior_manager": "allow", "senior": "allow",
-        "lead": "conditional", "staff": "conditional", "manager": "conditional", "architect": "conditional",
+        # Lead/Staff only when the posting's stated range fits; Manager/Architect are people-management or senior
+        # roles at this stage (a profile's own titles such as "Product Manager" are always allowed).
+        "lead": "conditional", "staff": "conditional", "manager": "exclude", "architect": "exclude",
         "principal": "exclude", "head": "exclude", "director": "exclude", "vp": "exclude", "chief": "exclude", LEVEL_3_PLUS: "allow",
     },
     "senior": {

@@ -80,7 +80,8 @@ def test_mid_level_engineer_profile_gate():
     classifier = Classifier.from_profile(profile_from_dict(minimal()))
     assert classifier.title_gate("Senior Software Engineer").status == "ok"
     assert classifier.non_target(classifier.title_gate("Senior Software Engineer").norm) == ""
-    assert classifier.title_gate("Software Engineering Manager").status == "conditional"  # manager: needs a stated range
+    assert classifier.title_gate("Software Development Manager").reason == "excluded_seniority:manager"
+    assert classifier.title_gate("Lead Software Engineer").status == "conditional"  # lead: needs a stated range
     assert classifier.title_gate("Principal Engineer").reason == "excluded_seniority:principal"
     assert classifier.title_gate("Software Engineer Intern").reason == "excluded_entry_title:intern"
     assert classifier.title_gate("Graduate Software Engineer").reason == "excluded_entry_title:graduate"
