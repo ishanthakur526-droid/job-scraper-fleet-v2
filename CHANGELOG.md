@@ -20,6 +20,7 @@ JobFleet (formerly Job Scraper Fleet) now works for any country, experience leve
 - Sources take the profile's countries and search keywords: Workday's country filter is matched by name, SmartRecruiters and Amazon use country codes, Accenture (13 countries) and Capgemini (15) use their country sites (verified live), and Oracle, Microsoft, EY, LinkedIn and Jobgether use location text. `config/boards.json` became `config/companies.json` with `{keyword}` / `{country}` placeholders and `countries` for country-specific careers sites (the old file name still works).
 - Claude's triage and scout prompts are written from the profile.
 - Duplicate grouping uses the real city. v3 read "India" in locations such as "1401-G-India: …, Noida" as the city and merged the same Genpact title across Noida, Hyderabad and Jaipur.
+- Capgemini links point to `www.capgemini.com/<site>/jobs/<id>/`: on 2026-11-14 the feed's own links (careers.capgemini.com/job/...) returned 404 for every country. Job history is unaffected (keys use the Capgemini id).
 - Mid-level searches drop Manager and Architect titles (a live US check listed a "Software Development Manager").
 - Reject reasons are worded for any country (`outside_your_countries`, `location_unknown`); domain names are used in `non_target_title:<domain>`.
 

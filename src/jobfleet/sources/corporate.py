@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 
 from ..http import FetchError
 from ..models import Board, RawJob, legacy_url_key
@@ -133,12 +133,13 @@ class CapgeminiAdapter(SourceAdapter):
             if not page:
                 break
             for item in page:
-                job_id = str(item.get("id") or item.get("_id") or item.get("ref") or "")
-                url = item.get("apply_job_url") or item.get("wp_url") or ""
+                job_id = str(item.get("id") or item.get("_id") or "")
                 if not job_id or job_id in seen:
                     continue
-                if not url:  # v2 fell back to a generic search page: useless link, colliding history keys
-                    continue
+                # Since 2026-11-14 the feed's apply_job_url (careers.capgemini.com/job/...) answers 404 for every
+                # country; the job page lives at www.capgemini.com/<site>/jobs/<id>/ (verified in a browser).
+                url = f"https://www.capgemini.com/{site}/jobs/{quote(job_id, safe='')}/"
+                legacy = [legacy_url_key(str(u)) for u in (item.get("apply_job_url"), item.get("wp_url")) if u and str(u) != "None"]
                 seen.add(job_id)
                 jobs.append(
                     RawJob(
@@ -151,7 +152,8 @@ class CapgeminiAdapter(SourceAdapter):
                         source_id=job_id,
                         posted_at=str(item.get("updated_at", "")),
                         posted_date=iso_date(item.get("updated_at")),
-                        url_kind="api",
+                        url_kind="constructed",
+                        legacy_keys=legacy,
                         flags={"geo_hint": "target"},  # the country site only lists that country's jobs
                     )
                 )
