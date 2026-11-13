@@ -3,10 +3,10 @@ from pathlib import Path
 
 import pytest
 
-from jobfleet.config import load_llm_config
 from jobfleet.llm import ClaudeResult, ClaudeRunner, in_backoff, parse_envelope
 from jobfleet.models import JobResult
 from jobfleet.pipeline import RunBuckets
+from jobfleet.profile import load_profile
 from jobfleet.scout import run_scout, scout_due
 from jobfleet.state import StateStore
 from jobfleet.triage import SCHEMA, run_triage
@@ -82,7 +82,7 @@ def test_triage_keeps_rows_below_the_demotion_threshold(tmp_path, config_source)
     state = StateStore(tmp_path / "s.sqlite")
     buckets = RunBuckets(main={"excel_mis": [row("m1", category="excel_mis")]}, possible={})
     verdict = {"verdicts": [{"id": "0", "relevant": False, "category": "none", "early_career_fit": "unclear", "confidence": 0.8, "reason": "asks 3-5 or 5-7 years"}]}
-    config = load_llm_config(CONFIG) if config_source == "shipped" else {"triage": {}}
+    config = load_profile(CONFIG.parent / "profile.toml").ai if config_source == "shipped" else {"triage": {}}
     summary = run_triage(FakeRunner(ClaudeResult(True, data=verdict)), buckets, state, config, tmp_path)
     assert "0 demoted" in summary
     kept = buckets.main["excel_mis"]

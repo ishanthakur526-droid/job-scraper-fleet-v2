@@ -30,6 +30,7 @@ class Category:
     excluded_title_patterns: list[str] = field(default_factory=list)
     title_keywords: list[str] = field(default_factory=list)
     route: str = "main"
+    domains: list[str] = field(default_factory=list)  # job domains this family owns (e.g. "engineering")
 
 
 @dataclass(frozen=True)

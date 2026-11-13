@@ -1,17 +1,27 @@
-"""Job classification: title gate -> geo -> experience -> category scoring."""
+"""Job classification: title gate -> geo -> experience -> role-family scoring.
+
+Every rule comes from the search profile (``profile.toml``): which seniority
+levels are allowed, conditional or excluded (``levels.py``), which job domains
+are off-limits, the role families and their titles, and the experience range.
+"""
 
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
 from functools import lru_cache
+from typing import TYPE_CHECKING
 
-from .experience import ExperienceResult, parse_experience
+from .experience import DEFAULT_MAX_YEARS, ExperienceResult, parse_experience
 from .geo import GeoResult, resolve
+from .levels import DOMAINS, LEVEL_3_PLUS, LEVELS
 from .models import Category, RawJob
-from .text import NormalizedTitle, keyword_hits, normalize_title, phrase_in_title, strip_boilerplate, tokens_in_title
+from .profile import Rules, default_rules
+from .text import NormalizedTitle, keyword_hits, normalize_title, phrase_in_title, set_title_abbreviations, strip_boilerplate, tokens_in_title
 
-CATEGORY_TIE_PRIORITY = {"research": 300, "excel_mis": 200, "data_bi": 100, "adjacent": 0}
+if TYPE_CHECKING:
+    from .profile import Profile
+
 ACCEPT_THRESHOLD = 55
 HIGH_CONFIDENCE_THRESHOLD = 75
 POSSIBLE_THRESHOLD = 30
@@ -21,99 +31,11 @@ TITLE_KEYWORD_WEIGHT = 35
 CONDITIONAL_TITLE_KEYWORD_WEIGHT = 50
 EVIDENCE_POINTS = 5
 EVIDENCE_CAP = 25
-LIMIT_YEARS = 3
 
-_ENTRY_RE = re.compile(
-    r"\b(?:trainees?|apprentices?|apprenticeship|graduates?|campus|interns?|internships?|pass ?outs?|20\d\d batch|batch (?:of )?20\d\d)\b"
-)
-_JUNIOR_MANAGER_RE = re.compile(r"\b(?:assistant|associate|deputy|asst)\s+manager\b")
-_SENIOR_RE = re.compile(r"\bsenior\b")
-_SENIOR_ALLOWED_RE = re.compile(r"\bsenior\s+(?:[a-z]+\s+){0,3}?(?:analyst|associate|executive)\b")
-_HARD_EXCLUDE: tuple[tuple[str, re.Pattern[str]], ...] = (
-    ("vice president", re.compile(r"\bvice president\b|\b(?:a|d|s|e)?vp\b")),
-    ("director", re.compile(r"\bdirector\b")),
-    ("chief", re.compile(r"\bchief\b")),
-    ("principal", re.compile(r"\bprincipal\b")),
-    ("head", re.compile(r"\bhead of\b|\bhead\b(?=\s*(?:-|,|$))|^head\b")),
-    ("architect", re.compile(r"\barchitect\b")),
-    ("lead", re.compile(r"\blead(?:er|ers|ership)?\b(?!\s+(?:generation|gen)\b)|\btl\b")),
-    ("staff", re.compile(r"\bstaff\b(?!\s+accountant)")),
-    ("manager", re.compile(r"\bmanager\b")),
-)
-_NON_TARGET: tuple[tuple[str, re.Pattern[str], re.Pattern[str] | None], ...] = (
-    (
-        "it/security operations",
-        re.compile(
-            r"\b(?:security|soc|cyber\s*security|cybersecurity|endpoint|network|it|cloud|infrastructure|talent|people"
-            r"|technical support|it support|support|platform|devops|noc|service desk|desktop|site reliability)\s+operations\b"
-        ),
-        None,
-    ),
-    (
-        "security",
-        re.compile(
-            r"\b(?:soc|siem|cyber|cybersecurity|penetration|vulnerability|threat|malware|forensics?|infosec)\b"
-            r"|\binformation security\b|\bsecurity (?:analyst|engineer|risk|specialist|consultant|associate)\b"
-        ),
-        None,
-    ),
-    (
-        "it systems",
-        re.compile(
-            r"\b(?:l|s|p)?mts\b|\bmember of technical staff\b|\b(?:business )?systems analyst\b|\bservicenow\b"
-            r"|\b(?:integration|middleware|event mesh)\b|\bsap (?:basis|abap|fiori|integration|security|bw|hana|btp|cpi|technical)\b"
-        ),
-        None,
-    ),
-    (
-        "engineering",
-        re.compile(r"\b(?:engineers?|engineering|developers?|programmer|sde|sdet|devops|sre|coder)\b"),
-        re.compile(r"\bbusiness intelligence engineer\b|\bdashboard developer\b|\bspreadsheet developer\b"),
-    ),
-    ("recruiting", re.compile(r"\b(?:recruiters?|recruitment|recruiting|talent acquisition|sourcer|headhunter)\b"), None),
-    (
-        "non-office",
-        re.compile(
-            r"\b(?:nurse|nursing|physician|doctor|pharmacist|dentist|therapist|driver|technician|mechanic|electrician"
-            r"|plumber|chef|cook|teacher|tutor|lecturer|professor|security guard|housekeeping)\b"
-        ),
-        None,
-    ),
-    (
-        "sales/support",
-        re.compile(
-            r"\b(?:sales|business development|inside sales)\s+(?:executive|representative|rep|associate|specialist|officer)\b"
-            r"|\baccount executive\b|\b(?:customer (?:service|support|success|care)|call cent(?:er|re)|tele ?caller"
-            r"|voice process|chat process)\b"
-        ),
-        None,
-    ),
-    ("design/content", re.compile(r"\bdesigner\b|\b(?:content writer|copywriter|copy writer|video editor|editor)\b"), None),
-    ("science/ml", re.compile(r"\b(?:scientist|machine learning|ml|deep learning|computer vision|nlp)\b"), None),
-    ("legal", re.compile(r"\b(?:legal counsel|lawyer|attorney|paralegal|advocate)\b"), None),
-    (
-        "qa/hr/martech",
-        re.compile(
-            r"\b(?:quality|qa|test) (?:analyst|auditor|associate|specialist|engineer)\b|\bhr (?:team|business partner)\b"
-            r"|\bhuman resources\b|\bmarketing technology\b|\bmartech\b"
-        ),
-        re.compile(r"\bdata quality\b|\b(?:hr|people|workforce) analytics\b"),
-    ),
-)
-# Titles worth a detail-page fetch even without a target-role match (kept narrow: detail calls are the slow part).
-PREFILTER_TERMS = frozenset(
-    {
-        "analyst", "analytics", "research", "insights", "intelligence", "reporting", "mis", "data", "reconciliation",
-        "kyc", "accounts", "procurement", "finance", "financial", "excel", "dashboard",
-    }
-)
-POSSIBLE_TITLE_TERMS = frozenset(
-    {
-        "analyst", "associate", "executive", "specialist", "research", "insights", "intelligence", "reporting",
-        "analytics", "business", "finance", "operations", "mis", "data", "reconciliation", "kyc", "accounts",
-        "procurement", "audit", "consultant", "coordinator", "officer",
-    }
-)
+ENTRY_LEVELS = ("intern", "entry_program")
+_LEVEL_NAMES = tuple(LEVELS)
+_AFTER_SENIOR = _LEVEL_NAMES[_LEVEL_NAMES.index("senior") + 1:]
+_FLAG_LEVELS = {"director": "director", "vp": "vp", "executive": "chief", "c_level": "chief"}
 
 
 @dataclass(frozen=True)
@@ -161,11 +83,33 @@ class Evaluation:
         return self.experience.label if self.experience else ""
 
 
+Span = tuple[int, int]
+
+
 class Classifier:
-    def __init__(self, categories: list[Category], adjacent: Category | None = None):
+    def __init__(
+        self,
+        categories: list[Category],
+        adjacent: Category | None = None,
+        *,
+        rules: Rules | None = None,
+        min_years: float = 0,
+        max_years: float = DEFAULT_MAX_YEARS,
+    ):
         self.categories = [c for c in categories if c.route == "main"]
         self.adjacent = adjacent
+        self.rules = rules or default_rules(self.all_categories)
+        self.min_years = float(min_years)
+        self.max_years = float(max_years)
+        set_title_abbreviations(self.rules.abbreviations)
         self._roles = {c.id: _roles(c) for c in self.all_categories}
+        self._domains = [DOMAINS[name] for name in DOMAINS if name in set(self.rules.excluded_domains)]
+        senior_words = "|".join(re.escape(w) for w in self.rules.senior_only_for)
+        self._senior_only = re.compile(rf"\bsenior\s+(?:[a-z]+\s+){{0,3}}?(?:{senior_words})\b") if senior_words else None
+
+    @classmethod
+    def from_profile(cls, profile: Profile) -> Classifier:
+        return cls(profile.families, profile.adjacent, rules=profile.rules, min_years=profile.min_years, max_years=profile.max_years)
 
     @property
     def all_categories(self) -> list[Category]:
@@ -175,45 +119,85 @@ class Classifier:
     def title_gate(self, title: str, flags: dict | None = None) -> TitleGate:
         flags = flags or {}
         norm = normalize_title(title)
-        text = norm.text
+        actions = self.rules.level_actions
         if flags.get("intern") or flags.get("university"):
-            return TitleGate("reject", "excluded_entry_title:" + ("intern" if flags.get("intern") else "university"), norm)
+            level = "intern" if flags.get("intern") else "entry_program"
+            if actions.get(level) == "exclude":
+                return TitleGate("reject", "excluded_entry_title:" + ("intern" if flags.get("intern") else "university"), norm)
         level_flag = str(flags.get("experience_level") or "").lower()
-        if level_flag in {"internship", "intern"}:
+        if level_flag in {"internship", "intern"} and actions.get("intern") == "exclude":
             return TitleGate("reject", "excluded_entry_title:internship", norm)
-        if level_flag in {"director", "executive", "vp", "c_level"}:
+        if level_flag in _FLAG_LEVELS and actions.get(_FLAG_LEVELS[level_flag]) == "exclude":
             return TitleGate("reject", f"excluded_seniority:{level_flag}", norm)
-        if flags.get("people_manager"):
+        if flags.get("people_manager") and actions.get("manager") == "exclude":
             return TitleGate("reject", "excluded_seniority:people_manager", norm)
-        entry = _ENTRY_RE.search(text)
+
+        spans = self._target_spans(norm)
+        text = norm.text
+        # Entry-level words are reported by the leftmost hit ("Trainee Intern" -> trainee).
+        entry = [m for name in ENTRY_LEVELS if actions.get(name) == "exclude" for m in _hits(LEVELS[name].pattern, text, spans)]
         if entry:
-            return TitleGate("reject", f"excluded_entry_title:{entry.group(0)}", norm)
+            return TitleGate("reject", f"excluded_entry_title:{min(entry, key=lambda m: m.start()).group(0)}", norm)
 
         conditional: list[str] = []
         working = text
-        if _JUNIOR_MANAGER_RE.search(working):
-            conditional.append("junior_manager_title")
-            working = _JUNIOR_MANAGER_RE.sub(" ", working)
-        if _SENIOR_RE.search(working):
-            if _SENIOR_ALLOWED_RE.search(working) and not any(p.search(working) for _n, p in _HARD_EXCLUDE):
-                conditional.append("senior_title")
-                working = _SENIOR_RE.sub(" ", working)
-            else:
-                return TitleGate("reject", "excluded_seniority:senior", norm)
-        for name, pattern in _HARD_EXCLUDE:
-            if pattern.search(working):
-                return TitleGate("reject", f"excluded_seniority:{name}", norm)
+        for name, level in LEVELS.items():
+            action = actions.get(name, "allow")
+            if name in ENTRY_LEVELS and action == "exclude":
+                continue
+            hits = _hits(level.pattern, working, spans)
+            if not hits:
+                continue
+            if name == "senior" and action != "exclude" and self._senior_only is not None:
+                # "Senior" is only acceptable in the listed titles (Senior Analyst) and never with Lead/Manager etc.
+                blocked = any(actions.get(n) == "exclude" and _hits(LEVELS[n].pattern, working, spans) for n in _AFTER_SENIOR)
+                if blocked or not self._senior_only.search(working):
+                    return TitleGate("reject", "excluded_seniority:senior", norm)
+            if action == "exclude":
+                prefix = "excluded_entry_title" if name in ENTRY_LEVELS else "excluded_seniority"
+                detail = hits[0].group(0) if name in ENTRY_LEVELS else level.label
+                return TitleGate("reject", f"{prefix}:{detail}", norm)
+            if action == "conditional":
+                conditional.append(f"{name}_title")
+            working = _blank(working, hits)  # so "Assistant Manager" does not also trip "manager"
         if norm.level and norm.level >= 3:
-            conditional.append(f"level_{norm.level}_title")
+            action = actions.get(LEVEL_3_PLUS, "allow")
+            if action == "exclude":
+                return TitleGate("reject", f"excluded_seniority:level_{norm.level}", norm)
+            if action == "conditional":
+                conditional.append(f"level_{norm.level}_title")
         if conditional:
             return TitleGate("conditional", "+".join(conditional), norm)
         return TitleGate("ok", "", norm)
 
     def non_target(self, norm: NormalizedTitle) -> str:
-        for name, pattern, exception in _NON_TARGET:
-            if pattern.search(norm.text) and not (exception and exception.search(norm.text)):
-                return name
+        spans: list[Span] | None = None
+        for domain in self._domains:
+            if not domain.pattern.search(norm.text):
+                continue
+            if domain.exception and domain.exception.search(norm.text):
+                continue
+            spans = self._target_spans(norm) if spans is None else spans
+            if _hits(domain.pattern, norm.text, spans):
+                return domain.name
         return ""
+
+    def _target_spans(self, norm: NormalizedTitle) -> list[Span]:
+        """Where the title contains one of the profile's own job titles. Level and domain words inside such a
+        span are part of the wanted title ("Product Manager", "BI Engineer") and are not held against it."""
+        spans: list[Span] = []
+        for category in self.all_categories:
+            has_keyword: bool | None = None
+            for role in self._roles[category.id]:
+                if role.requires_title_keyword:
+                    if has_keyword is None:
+                        has_keyword = bool(category.title_keywords) and bool(keyword_hits(norm.text, category.title_keywords))
+                    if not has_keyword:
+                        continue
+                target = normalize_title(role.raw).text
+                if target:
+                    spans.extend(m.span() for m in _phrase_regex(target).finditer(norm.text))
+        return spans
 
     def prefilter(self, title: str, flags: dict | None = None) -> tuple[bool, str]:
         """Cheap title-only check used by adapters before fetching job details."""
@@ -226,7 +210,7 @@ class Classifier:
         conditional = gate.status == "conditional"
         if any(self._title_score(c, gate.norm, conditional)[0] > 0 for c in self.all_categories):
             return True, ""
-        if PREFILTER_TERMS.intersection(gate.norm.tokens):
+        if self.rules.prefilter_terms.intersection(gate.norm.tokens):
             return True, ""
         return False, "irrelevant_title"
 
@@ -236,7 +220,7 @@ class Classifier:
         has_keyword = bool(category.title_keywords) and bool(keyword_hits(norm.text, category.title_keywords))
         for role in self._roles[category.id]:
             if role.requires_title_keyword and not has_keyword:
-                continue  # generic 'Associate Analyst' only counts for Data & BI with a data/analytics word
+                continue  # e.g. generic 'Associate Analyst' only counts with a data/analytics word in the title
             if phrase_in_title(norm, role.raw):
                 score = role.weight
             elif tokens_in_title(norm, role.raw):
@@ -294,14 +278,17 @@ class Classifier:
             reason = "non_india" if geo.status == "foreign" else "geo_unknown"
             return Evaluation(job, "reject", reason=reason, stage="geo", geo=geo)
 
-        experience = parse_experience(job.requirements_text or job.description, job.preferred_text, title=job.title)
+        experience = parse_experience(
+            job.requirements_text or job.description, job.preferred_text, title=job.title, min_years=self.min_years, max_years=self.max_years
+        )
         if experience.decision == "reject":
-            return Evaluation(job, "reject", reason="experience_too_high", stage="experience", geo=geo, experience=experience)
+            reason = experience.reason or "experience_too_high"
+            return Evaluation(job, "reject", reason=reason, stage="experience", geo=geo, experience=experience)
 
         review_flags: list[str] = []
         notes: list[str] = []
         if gate.status == "conditional":
-            if not experience.explicit or experience.min_years is None or experience.min_years > LIMIT_YEARS:
+            if not experience.explicit or experience.min_years is None or experience.min_years > self.max_years:
                 return Evaluation(
                     job, "reject", reason=f"conditional_title_unverified:{gate.reason}", stage="title", geo=geo, experience=experience
                 )
@@ -320,7 +307,8 @@ class Classifier:
 
         text = strip_boilerplate(f"{job.requirements_text}\n{job.description}")[:6000]
         main_scores = [self.score(c, gate, text) for c in self.categories]
-        ranked = sorted(main_scores, key=lambda s: (-s.score, -CATEGORY_TIE_PRIORITY.get(s.category.id, 0), s.category.id))
+        tie = self.rules.tie_priority
+        ranked = sorted(main_scores, key=lambda s: (-s.score, -tie.get(s.category.id, 0), s.category.id))
         accepted = [s for s in ranked if not s.disqualified and s.score >= ACCEPT_THRESHOLD]
 
         route = "aggregator" if flags.get("aggregator") else "main"
@@ -339,11 +327,7 @@ class Classifier:
             return Evaluation(
                 job, "reject", category_id=best.category.id, reason=best.disqualified, stage="role", geo=geo, experience=experience
             )
-        if (
-            best
-            and best.score >= POSSIBLE_THRESHOLD
-            and POSSIBLE_TITLE_TERMS.intersection(gate.norm.tokens)
-        ):
+        if best and best.score >= POSSIBLE_THRESHOLD and self.rules.possible_terms.intersection(gate.norm.tokens):
             return Evaluation(
                 job,
                 "possible",
@@ -407,6 +391,28 @@ def _roles(category: Category) -> list[Role]:
         else:
             roles.append(Role(str(item), DEFAULT_ROLE_WEIGHT))
     return [r for r in roles if r.raw]
+
+
+def _inside(span: Span, spans: list[Span]) -> bool:
+    return any(start <= span[0] and span[1] <= end for start, end in spans)
+
+
+def _hits(pattern: re.Pattern[str], text: str, spans: list[Span]) -> list[re.Match[str]]:
+    """Matches of ``pattern`` that are not part of one of the profile's own target titles."""
+    return [m for m in pattern.finditer(text) if not _inside(m.span(), spans)]
+
+
+def _blank(text: str, matches: list[re.Match[str]]) -> str:
+    """Blank out matched words while keeping every other character at the same offset."""
+    chars = list(text)
+    for match in matches:
+        chars[match.start():match.end()] = " " * (match.end() - match.start())
+    return "".join(chars)
+
+
+@lru_cache(maxsize=1024)
+def _phrase_regex(target: str) -> re.Pattern[str]:
+    return re.compile(rf"(?<![a-z0-9]){re.escape(target)}(?![a-z0-9])")
 
 
 @lru_cache(maxsize=512)

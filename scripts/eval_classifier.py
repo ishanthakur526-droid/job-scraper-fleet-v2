@@ -21,8 +21,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from jobfleet.classifier import Classifier  # noqa: E402
-from jobfleet.config import load_taxonomy  # noqa: E402
 from jobfleet.pipeline import dedupe_raw  # noqa: E402
+from jobfleet.profile import load_profile  # noqa: E402
 from jobfleet.rawdump import read_dump  # noqa: E402
 
 LABELS = ("data_bi", "research", "excel_mis", "adjacent", "none")
@@ -35,8 +35,7 @@ def predicted(evaluation) -> str:
 
 
 def evaluate(dump: Path):
-    categories, adjacent = load_taxonomy(ROOT / "config")
-    classifier = Classifier(categories, adjacent)
+    classifier = Classifier.from_profile(load_profile(ROOT / "profile.toml"))
     _meta, jobs, _health = read_dump(dump)
     return [classifier.evaluate(job) for job in dedupe_raw(jobs)]
 

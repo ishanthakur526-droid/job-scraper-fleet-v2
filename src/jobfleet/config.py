@@ -6,31 +6,13 @@ import os
 from pathlib import Path
 from typing import Any
 
-from .models import Board, Category
+from .models import Board
 
-_CATEGORY_FIELDS = {f.name for f in dataclasses.fields(Category)}
 _BOARD_FIELDS = {f.name for f in dataclasses.fields(Board)}
 
 
 def _read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8-sig"))
-
-
-def _category(item: dict[str, Any], route: str = "main") -> Category:
-    data = {key: value for key, value in item.items() if key in _CATEGORY_FIELDS}
-    data.setdefault("route", route)
-    return Category(**data)
-
-
-def load_taxonomy(config_dir: Path) -> tuple[list[Category], Category | None]:
-    data = _read_json(config_dir / "categories.json")
-    categories = [_category(item) for item in data.get("categories", [])]
-    adjacent = _category(data["adjacent"], route="adjacent") if data.get("adjacent") else None
-    return categories, adjacent
-
-
-def load_categories(config_dir: Path) -> list[Category]:
-    return load_taxonomy(config_dir)[0]
 
 
 def _board(item: dict[str, Any]) -> Board:
@@ -85,32 +67,3 @@ def dedupe_boards(boards: list[Board]) -> list[Board]:
         seen.add(board.key)
         output.append(board)
     return output
-
-
-DEFAULT_LLM_CONFIG: dict[str, Any] = {
-    "enabled": True,
-    "claude_exe": "",
-    "model": "sonnet",
-    "effort": "low",
-    "scout": {"enabled": True, "every_days": 7, "timeout_s": 900, "model": "sonnet", "effort": "medium"},
-    "triage": {
-        "enabled": True,
-        "max_items": 60,
-        "timeout_s": 240,
-        "promote_confidence": 0.75,
-        "demote_confidence": 0.85,
-    },
-}
-
-
-def load_llm_config(config_dir: Path) -> dict[str, Any]:
-    config = json.loads(json.dumps(DEFAULT_LLM_CONFIG))
-    path = config_dir / "llm.json"
-    if path.exists():
-        user = _read_json(path)
-        for key, value in user.items():
-            if isinstance(value, dict) and isinstance(config.get(key), dict):
-                config[key].update(value)
-            else:
-                config[key] = value
-    return config

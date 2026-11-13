@@ -1,0 +1,122 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  JobFleet search profile
+#  This one file decides WHERE you look, at what LEVEL, and for WHICH roles.
+#  Edit it in any text editor (Notepad is fine), save, and run again.
+#  Not sure? Run Setup.bat (or `jobfleet setup`) and it is written for you.
+#  Ready-made examples live in the profiles/ folder.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name = "India · early-career analyst (Ishan)"
+
+# ── WHERE ────────────────────────────────────────────────────────────────────
+[location]
+countries = ["India"]         # one or more, e.g. ["United States", "Canada"]
+cities    = []                # optional: only keep jobs in these cities, e.g. ["Bengaluru", "Pune"]
+remote    = "include"         # include = remote jobs too | only = remote only | exclude = no remote
+
+# ── LEVEL ────────────────────────────────────────────────────────────────────
+[experience]
+min_years = 0
+max_years = 3
+level     = "early_career"    # student | early_career | mid | senior | leadership
+
+# ── WHAT ─────────────────────────────────────────────────────────────────────
+# One [[role_family]] block per kind of job. Each family gets its own list
+# (CSV file + dashboard tab). Copy a block to add a family; delete one to drop it.
+#   titles          job titles you want (word order does not matter: "Analyst, Data" = "Data Analyst")
+#   title_keywords  a title containing one of these words is a weaker match
+#   keywords        words in the description that raise the score
+#   exclude_title_words  titles containing these are never put in this family
+
+[[role_family]]
+id     = "data_bi"
+name   = "Data & BI"
+output = "data_bi_roles_today.csv"
+titles = [
+  "Data Analyst", "Business Intelligence Analyst", "BI Analyst", "Reporting Analyst", "Marketing Analyst",
+  "Business Analyst", "Operations Analyst", "Insights Analyst", "Dashboard Developer",
+  "Business Intelligence Engineer", "Analytics Associate",
+  { title = "Associate Analyst", weight = 40, requires_title_keyword = true },
+]
+title_keywords = ["analytics", "business intelligence", "dashboard", "insights", "reporting", "data analysis", "power bi", "tableau"]
+keywords = ["sql", "excel", "power bi", "tableau", "looker", "dashboard", "reporting", "analytics", "insights", "data analysis",
+            "data visualization", "kpi", "python", "business intelligence"]
+exclude_title_words = ["lead data scientist", "machine learning engineer"]
+
+[[role_family]]
+id     = "research"
+name   = "Research"
+output = "research_roles_today.csv"
+titles = [
+  "Research Analyst", "Market Research Analyst", "Competitive Intelligence Analyst", "Consumer Insights Analyst",
+  "Secondary Research Analyst", "Equity Research Analyst", "Market Intelligence Analyst", "Market Intelligence",
+]
+title_keywords = ["research", "market intelligence", "competitive intelligence"]
+keywords = ["research", "market research", "secondary research", "primary research", "competitive intelligence", "consumer insights",
+            "equity research", "market intelligence", "industry analysis", "market sizing", "survey"]
+exclude_description_phrases = ["phd required", "phd is required", "doctorate required"]
+
+[[role_family]]
+id     = "excel_mis"
+name   = "Excel / MIS"
+output = "excel_sheets_roles_today.csv"
+titles = [
+  "MIS Executive", "MIS Analyst", "Excel Specialist", "Google Sheets Specialist", "Spreadsheet Developer", "Excel Analyst",
+  "Excel Consultant", "Workbook Designer", "Data Operations Analyst", "Finance Operations Analyst",
+  "Financial Operations Analyst", "Analyst Finance Operations", "Revenue Operations Analyst", "Sales Operations Analyst",
+  "Business Operations Analyst", "Business Finance", "Business Finance Analyst", "Commissions Analyst", "Recon Analyst",
+  "Operations Analyst", "Operations Specialist", "Order Management", "Reconciliation Analyst", "Procurement Analyst",
+  "Cash Treasury Analyst", "KYC Analyst", "Accounts Receivable", "Accounts Payable",
+]
+title_keywords = ["mis", "excel", "reconciliation", "spreadsheet"]
+keywords = ["excel", "advanced excel", "mis", "spreadsheet", "google sheets", "vlookup", "pivot", "macros", "vba", "dashboard",
+            "reporting", "reconciliation"]
+
+# Optional second-tier list (adjacent_roles_today.csv): related roles worth a look.
+[adjacent]
+titles = ["Financial Analyst", "Finance Analyst", "FP&A Analyst", "FP&A", "Pricing Analyst", "Risk Analyst", "Credit Analyst",
+          "Content Analyst"]
+keywords = ["excel", "financial modeling", "fp&a", "forecasting", "budgeting", "variance analysis", "sql", "reporting", "risk",
+            "credit", "pricing", "analysis"]
+
+# Words typed into job-board search boxes (only some sources need them).
+[search]
+keywords = ["analyst", "data analyst", "business analyst", "research analyst", "mis", "reporting analyst"]
+
+# ── OPTIONAL: Claude (uses your Claude subscription through the Claude Code CLI; no API key) ──
+[ai]
+enabled = true
+model   = "sonnet"
+effort  = "low"
+
+[ai.scout]                    # weekly: finds new companies' job boards
+enabled    = true
+every_days = 7
+
+[ai.triage]                   # daily: second opinion on borderline jobs
+enabled            = true
+max_items          = 60
+promote_confidence = 0.75
+demote_confidence  = 0.85
+
+# ── ADVANCED (optional) ──────────────────────────────────────────────────────
+# Fine-tuning on top of the level preset. Everything here has sensible defaults.
+[advanced]
+exclude_levels  = ["intern", "entry_program"]             # no internships, trainee, graduate or campus programmes
+senior_only_for = ["analyst", "associate", "executive"]   # "Senior" is kept only in these titles (and only if the posting asks <= max_years)
+tie_priority    = ["research", "excel_mis", "data_bi"]    # when a job fits two families equally, the first wins
+prefilter_terms = ["analyst", "analytics", "research", "insights", "intelligence", "reporting", "mis", "data", "reconciliation",
+                   "kyc", "accounts", "procurement", "finance", "financial", "excel", "dashboard"]
+possible_terms  = ["analyst", "associate", "executive", "specialist", "research", "insights", "intelligence", "reporting", "analytics",
+                   "business", "finance", "operations", "mis", "data", "reconciliation", "kyc", "accounts", "procurement", "audit",
+                   "consultant", "coordinator", "officer"]
+
+[advanced.title_abbreviations]                            # expanded in titles before matching
+bie = "business intelligence engineer"
+bi  = "business intelligence"
+mi  = "market intelligence"
+ar  = "accounts receivable"
+ap  = "accounts payable"
+p2p = "procure to pay"
+o2c = "order to cash"
+r2r = "record to report"

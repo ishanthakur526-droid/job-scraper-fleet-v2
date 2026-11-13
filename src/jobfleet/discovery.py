@@ -30,13 +30,13 @@ def discover_urls(http: HttpClient, queries: list[str], limit_per_query: int = 1
     return _dedupe(urls)
 
 
-def build_queries(category_name: str, roles: list[str]) -> list[str]:
-    role_slice = roles[:4]
+def build_queries(category_name: str, roles: list[str], place: str = "") -> list[str]:
+    suffix = f" {place}" if place else ""
     return [
-        f'site:jobs.lever.co OR site:boards.greenhouse.io OR site:jobs.ashbyhq.com "{role}" India'
-        for role in role_slice
+        f'site:jobs.lever.co OR site:boards.greenhouse.io OR site:jobs.ashbyhq.com "{role}"{suffix}'
+        for role in roles[:4]
     ] + [
-        f'"{category_name}" analyst jobs India greenhouse lever ashby'
+        f'"{category_name}" jobs{suffix} greenhouse lever ashby'
     ]
 
 

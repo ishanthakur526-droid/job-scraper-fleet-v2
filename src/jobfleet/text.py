@@ -111,23 +111,36 @@ def keyword_hits(text: str, terms: list[str]) -> list[str]:
 
 
 # --------------------------------------------------------- title normalising
-_TITLE_EXPANSIONS = (
-    (r"\bsr\b", "senior"),
-    (r"\bjr\b", "junior"),
-    (r"\bassoc\b", "associate"),
-    (r"\bexec\b", "executive"),
-    (r"\bmgr\b", "manager"),
-    (r"\bops\b", "operations"),
-    (r"\bbie\b", "business intelligence engineer"),
-    (r"\bbi\b", "business intelligence"),
-    (r"\bmi\b", "market intelligence"),
-    (r"\bar\b", "accounts receivable"),
-    (r"\bap\b", "accounts payable"),
-    (r"\bp2p\b", "procure to pay"),
-    (r"\bo2c\b", "order to cash"),
-    (r"\br2r\b", "record to report"),
-    (r"\bfpa\b", "fpa"),
-)
+DEFAULT_ABBREVIATIONS: dict[str, str] = {
+    "sr": "senior",
+    "jr": "junior",
+    "assoc": "associate",
+    "exec": "executive",
+    "mgr": "manager",
+    "ops": "operations",
+    "bie": "business intelligence engineer",
+    "bi": "business intelligence",
+    "mi": "market intelligence",
+    "ar": "accounts receivable",
+    "ap": "accounts payable",
+    "p2p": "procure to pay",
+    "o2c": "order to cash",
+    "r2r": "record to report",
+}
+_title_expansions: tuple[tuple[re.Pattern[str], str], ...] = ()
+
+
+def set_title_abbreviations(mapping: dict[str, str]) -> None:
+    """Abbreviations expanded in titles before matching (order matters: 'bie' before 'bi')."""
+    global _title_expansions
+    expansions = tuple(
+        (re.compile(r"\b" + re.escape(short.lower()) + r"\b"), long.lower()) for short, long in mapping.items() if short and long
+    )
+    if expansions != _title_expansions:
+        _title_expansions = expansions
+        normalize_title.cache_clear()
+
+
 _ROMAN_LEVELS = {"i": 1, "ii": 2, "iii": 3, "iv": 4}
 _LEVEL_DIGIT_RE = re.compile(r"\b(?:analyst|associate|engineer|specialist|executive|consultant|scientist|officer)\s+([1-5])\b")
 
@@ -152,8 +165,8 @@ def normalize_title(title: str) -> NormalizedTitle:
     t = re.sub(r"\b\d{5,}\b", " ", t)
     t = t.replace("&", " and ")
     t = re.sub(r"[^a-z0-9+#]+", " ", t)
-    for pattern, replacement in _TITLE_EXPANSIONS:
-        t = re.sub(pattern, replacement, t)
+    for pattern, replacement in _title_expansions:
+        t = pattern.sub(replacement, t)
     t = re.sub(r"\s+", " ", t).strip()
     level = None
     tokens = tuple(t.split())
@@ -187,6 +200,9 @@ def tokens_in_title(norm: NormalizedTitle, phrase: str, window_slack: int = 1) -
             return False
         positions.append(title_tokens.index(tok))
     return max(positions) - min(positions) <= len(role_tokens) - 1 + window_slack
+
+
+set_title_abbreviations(DEFAULT_ABBREVIATIONS)
 
 
 def truncate(text: str, limit: int) -> str:

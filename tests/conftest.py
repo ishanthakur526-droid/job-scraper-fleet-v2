@@ -13,7 +13,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-_IGNORED_DIRS = {".git", ".venv", "venv", "outputs", "outputs_dev", "outputs_replay", "outputs_search", "__pycache__", ".pytest_cache", ".ruff_cache"}
+_IGNORED_DIRS = {".git", ".worktrees", ".venv", "venv", "outputs", "outputs_dev", "outputs_replay", "outputs_search", "__pycache__", ".pytest_cache", ".ruff_cache"}
 
 
 def _snapshot() -> set[str]:
@@ -36,6 +36,15 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     if created:
         sys.stderr.write("\nTests wrote files inside the repository: " + ", ".join(created[:10]) + "\n")
         session.exitstatus = 1
+
+
+@pytest.fixture(autouse=True)
+def _default_title_abbreviations():
+    """A classifier sets the profile's title abbreviations globally; restore the defaults after each test."""
+    yield
+    from jobfleet.text import DEFAULT_ABBREVIATIONS, set_title_abbreviations
+
+    set_title_abbreviations(DEFAULT_ABBREVIATIONS)
 
 
 class FakeHttp:

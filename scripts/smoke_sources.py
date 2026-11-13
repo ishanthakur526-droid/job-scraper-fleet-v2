@@ -17,15 +17,15 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from jobfleet.canary import check  # noqa: E402
 from jobfleet.classifier import Classifier  # noqa: E402
-from jobfleet.config import load_boards, load_taxonomy  # noqa: E402
+from jobfleet.config import load_boards  # noqa: E402
 from jobfleet.http import FetchError, HttpClient  # noqa: E402
 from jobfleet.pipeline import to_result  # noqa: E402
+from jobfleet.profile import load_profile  # noqa: E402
 from jobfleet.sources import AdapterContext, adapter_for  # noqa: E402
 
 
 def main(only: list[str]) -> int:
-    categories, adjacent = load_taxonomy(ROOT / "config")
-    classifier = Classifier(categories, adjacent)
+    classifier = Classifier.from_profile(load_profile(ROOT / "profile.toml"))
     boards, _ = load_boards(ROOT / "config", include_disabled=False)
     picked = {}
     for board in boards:

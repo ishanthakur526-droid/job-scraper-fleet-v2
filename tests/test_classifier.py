@@ -3,17 +3,16 @@ from pathlib import Path
 import pytest
 
 from jobfleet.classifier import Classifier
-from jobfleet.config import load_taxonomy
 from jobfleet.models import RawJob
+from jobfleet.profile import load_profile
 from jobfleet.text import keyword_hits
 
-CONFIG = Path(__file__).resolve().parents[1] / "config"
+PROFILE = Path(__file__).resolve().parents[1] / "profile.toml"
 
 
 @pytest.fixture(scope="module")
 def classifier():
-    categories, adjacent = load_taxonomy(CONFIG)
-    return Classifier(categories, adjacent)
+    return Classifier.from_profile(load_profile(PROFILE))
 
 
 def job(title, description="Bengaluru role. Build SQL dashboards and Excel reporting for analytics insights.", location="Bengaluru, India", **kw):

@@ -1,9 +1,10 @@
 import json
 from pathlib import Path
 
-from jobfleet.config import load_boards, load_llm_config, load_taxonomy
+from jobfleet.config import load_boards
 from jobfleet.exporters import MAIN_COLUMNS, export_category, main_row
 from jobfleet.models import Category, JobResult
+from jobfleet.profile import load_profile
 from jobfleet.sources import ADAPTERS
 
 CONFIG = Path(__file__).resolve().parents[1] / "config"
@@ -15,9 +16,10 @@ def test_shipped_config_is_consistent():
     assert all(board.source in ADAPTERS for board in boards)
     keys = [board.key for board in boards]
     assert len(keys) == len(set(keys))
-    categories, adjacent = load_taxonomy(CONFIG)
-    assert [c.id for c in categories] == ["data_bi", "research", "excel_mis"] and adjacent.id == "adjacent"
-    assert load_llm_config(CONFIG)["triage"]["max_items"] > 0
+    profile = load_profile(CONFIG.parent / "profile.toml")
+    assert profile.family_ids == ["data_bi", "research", "excel_mis"] and profile.adjacent.id == "adjacent"
+    assert profile.ai["triage"]["max_items"] > 0
+    assert {c for b in boards for c in b.priority_categories} <= set(profile.family_ids)
 
 
 def test_load_boards_merges_discovered_and_skips_disabled(tmp_path):

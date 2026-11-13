@@ -1,11 +1,14 @@
 """Context-aware parser for "years of experience" requirements.
 
-Rules (user's policy): the job must accept candidates with 0-3 years. Ranges
-that overlap (2-5 years) are fine, a strict minimum of 4+ rejects, and no
-stated experience keeps the job. A number only counts when it is phrased as a
-candidate requirement - company history ("over 45 years of excellence"), ages,
-contract lengths and numbers above 15 are ignored, and "preferred"
-qualifications never cause a rejection.
+The profile gives a range, e.g. 0-3 years. A posting is kept when its required
+minimum is within the range: overlapping ranges (2-5 years for a 0-3 profile)
+are fine, a strict minimum above ``max_years`` (4+) rejects, and no stated
+experience keeps the job. With ``min_years`` above 0, postings that top out
+below it (0-2 years for a 5-10 profile) are dropped as too junior.
+
+A number only counts when it is phrased as a candidate requirement - company
+history ("over 45 years of excellence"), ages, contract lengths and implausibly
+large numbers are ignored, and "preferred" qualifications never reject.
 """
 
 from __future__ import annotations
@@ -23,7 +26,9 @@ _WORDNUM = "|".join(_WORD_NUMBERS)
 NUM = r"(\d{1,2}(?:\.\d{1,2})?)"
 UNIT = r"(years?|months?)"
 MAX_CREDIBLE_YEARS = 15
-LIMIT_YEARS = 3
+DEFAULT_MAX_YEARS = 3
+REVIEW_MARGIN_YEARS = 3  # "1-3 years ... 5+ years" with max 3: conflicting -> review (up to max + 3)
+TOO_JUNIOR_SLACK_YEARS = 2  # open-ended "N+" counts as too junior only when N < min_years - 2
 
 _PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("label", re.compile(rf"experience\s*(?:required|level|range)?\s*[:\-]\s*{NUM}\s*(?:-|to)\s*{NUM}(?!\s*\d)\s*{UNIT}?")),
@@ -100,6 +105,7 @@ class ExperienceResult:
     evidence: str = ""
     note: str = ""
     explicit: bool = False
+    reason: str = ""  # for rejects: "experience_too_high" | "experience_too_low"
 
     @property
     def allowed(self) -> bool:
@@ -162,7 +168,7 @@ def _sentences(text: str) -> list[tuple[str, bool]]:
     return out
 
 
-def _extract(sentence: str, index: int, section_preferred: bool) -> list[Mention]:
+def _extract(sentence: str, index: int, section_preferred: bool, cap: float = MAX_CREDIBLE_YEARS) -> list[Mention]:
     taken: list[tuple[int, int]] = []
     mentions: list[Mention] = []
     for kind, pattern in _PATTERNS:
@@ -186,7 +192,7 @@ def _extract(sentence: str, index: int, section_preferred: bool) -> list[Mention
                 if kind == "over" and not (unit or "").startswith("month"):
                     min_y = float(int(min_y) + 1)
                 max_y, b = None, None
-            if not _credible(sentence, start, end, kind, max(min_y, max_y or 0)):
+            if not _credible(sentence, start, end, kind, max(min_y, max_y or 0), cap):
                 continue
             taken.append((start, end))
             mentions.append(
@@ -206,8 +212,8 @@ def _extract(sentence: str, index: int, section_preferred: bool) -> list[Mention
     return mentions
 
 
-def _credible(sentence: str, start: int, end: int, kind: str, magnitude: float) -> bool:
-    if magnitude > MAX_CREDIBLE_YEARS:
+def _credible(sentence: str, start: int, end: int, kind: str, magnitude: float, cap: float = MAX_CREDIBLE_YEARS) -> bool:
+    if magnitude > cap:
         return False
     if _AGE_RE.search(sentence) or _INTERNAL_RE.search(sentence):
         return False
@@ -237,7 +243,7 @@ def _collapse_alternatives(mentions: list[Mention]) -> list[Mention]:
     return [min(group, key=lambda m: m.min_years) for group in groups]
 
 
-def _title_mentions(title: str) -> list[Mention]:
+def _title_mentions(title: str, cap: float = MAX_CREDIBLE_YEARS) -> list[Mention]:
     """Experience stated in the title ('MI / 6 to 12 Years /', 'Exp- 4-6 yrs') is a requirement."""
     text = _normalize(title or "")
     for kind, pattern in _PATTERNS:
@@ -247,30 +253,43 @@ def _title_mentions(title: str) -> list[Mention]:
             groups = match.groups()
             if kind in ("range", "between", "label"):
                 low, high = _to_years(groups[0], groups[2]), _to_years(groups[1], groups[2])
-                if low <= high <= MAX_CREDIBLE_YEARS:
+                if low <= high <= cap:
                     label = _label(kind, groups[0], groups[1], groups[2])
                     return [Mention(match.start(), match.end(), low, high, kind, label, -1, title)]
             else:
                 years = _to_years(groups[0], groups[1])
-                if years <= MAX_CREDIBLE_YEARS:
+                if years <= cap:
                     label = _label(kind, groups[0], None, groups[1])
                     return [Mention(match.start(), match.end(), years, None, kind, label, -1, title)]
     return []
 
 
-def parse_experience(text: str, preferred_text: str = "", title: str = "") -> ExperienceResult:
-    """Parse required experience; ``preferred_text`` is never allowed to reject."""
+def credible_cap(max_years: float) -> float:
+    """Largest believable requirement: 15 years, more for senior profiles (a 10-30 year search reads "20+ years")."""
+    return max(float(MAX_CREDIBLE_YEARS), min(40.0, max_years + 5))
+
+
+def parse_experience(
+    text: str,
+    preferred_text: str = "",
+    title: str = "",
+    *,
+    min_years: float = 0,
+    max_years: float = DEFAULT_MAX_YEARS,
+) -> ExperienceResult:
+    """Parse required experience against the profile's range; ``preferred_text`` never rejects."""
+    cap = credible_cap(max_years)
     body = _normalize(text or "")
-    title_mentions = _title_mentions(title)
+    title_mentions = _title_mentions(title, cap)
     if not body.strip() and not (preferred_text or "").strip() and not title_mentions:
         return ExperienceResult("accept", None, None, "Unspecified", note="No description text available")
 
     mentions: list[Mention] = list(title_mentions)
     for index, (sentence, preferred) in enumerate(_sentences(body)):
-        mentions.extend(_extract(sentence, index, preferred))
+        mentions.extend(_extract(sentence, index, preferred, cap))
     pref_body = _normalize(preferred_text or "")
     for index, (sentence, _preferred) in enumerate(_sentences(pref_body), start=10_000):
-        for mention in _extract(sentence, index, True):
+        for mention in _extract(sentence, index, True, cap):
             mention.preferred = True
             mentions.append(mention)
 
@@ -281,9 +300,20 @@ def parse_experience(text: str, preferred_text: str = "", title: str = "") -> Ex
         binding = max(required, key=lambda m: m.min_years)
         floor = min(required, key=lambda m: m.min_years)
         evidence = _evidence(binding)
-        if binding.min_years <= LIMIT_YEARS:
+        if binding.min_years <= max_years:
+            if min_years > 0 and _too_junior(binding, min_years):
+                return ExperienceResult(
+                    "reject",
+                    binding.min_years,
+                    binding.max_years,
+                    binding.label,
+                    evidence,
+                    note=f"Rejected: posting asks for {binding.label}, below your minimum of {_fmt(min_years)} years",
+                    explicit=True,
+                    reason="experience_too_low",
+                )
             return ExperienceResult("accept", binding.min_years, binding.max_years, binding.label, evidence, explicit=True)
-        if floor.min_years <= LIMIT_YEARS and binding.min_years <= 6:
+        if floor.min_years <= max_years and binding.min_years <= max_years + REVIEW_MARGIN_YEARS:
             return ExperienceResult(
                 "review",
                 floor.min_years,
@@ -301,6 +331,7 @@ def parse_experience(text: str, preferred_text: str = "", title: str = "") -> Ex
             evidence,
             note=f"Rejected: required minimum is {binding.label}",
             explicit=True,
+            reason="experience_too_high",
         )
     if preferred:
         easiest = min(preferred, key=lambda m: m.min_years)
@@ -308,8 +339,18 @@ def parse_experience(text: str, preferred_text: str = "", title: str = "") -> Ex
             "accept", None, None, f"Preferred: {easiest.label}", _evidence(easiest), note="Only preferred experience stated"
         )
     if _FRESHER_RE.search(body):
+        if min_years > TOO_JUNIOR_SLACK_YEARS:
+            return ExperienceResult(
+                "reject", 0.0, None, "Fresher / 0 years", note="Rejected: entry-level posting", explicit=True, reason="experience_too_low"
+            )
         return ExperienceResult("accept", 0.0, None, "Fresher / 0 years", explicit=True)
     return ExperienceResult("accept", None, None, "Unspecified")
+
+
+def _too_junior(mention: Mention, min_years: float) -> bool:
+    if mention.max_years is not None:
+        return mention.max_years < min_years
+    return mention.min_years < min_years - TOO_JUNIOR_SLACK_YEARS
 
 
 def _evidence(mention: Mention) -> str:
