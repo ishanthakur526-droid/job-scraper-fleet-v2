@@ -13,7 +13,8 @@ if (-not (Test-Path -LiteralPath $runner)) {
 
 $action = New-ScheduledTaskAction `
   -Execute "powershell.exe" `
-  -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$runner`""
+  -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$runner`"" `
+  -WorkingDirectory $root
 
 $trigger = New-ScheduledTaskTrigger `
   -Weekly `
@@ -23,11 +24,12 @@ $trigger = New-ScheduledTaskTrigger `
 $settings = New-ScheduledTaskSettingsSet `
   -StartWhenAvailable `
   -MultipleInstances IgnoreNew `
-  -ExecutionTimeLimit (New-TimeSpan -Hours 2) `
+  -ExecutionTimeLimit (New-TimeSpan -Hours 1) `
   -RestartCount 2 `
   -RestartInterval (New-TimeSpan -Minutes 10) `
   -RunOnlyIfNetworkAvailable
 
+# Interactive logon: the task runs as you, so the Claude Code CLI can use your existing login.
 $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
 $principal = New-ScheduledTaskPrincipal `
   -UserId $currentUser `
@@ -39,7 +41,7 @@ $task = New-ScheduledTask `
   -Trigger $trigger `
   -Settings $settings `
   -Principal $principal `
-  -Description "Runs Job Scraper Fleet v2 every weekday at 4 PM. If the machine is off or unavailable, Task Scheduler starts it when available after login."
+  -Description "Runs Job Scraper Fleet every weekday at 4 PM. If the machine is off, Task Scheduler starts it when available after login."
 
 Register-ScheduledTask `
   -TaskName $TaskName `

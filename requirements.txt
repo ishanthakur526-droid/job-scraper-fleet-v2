@@ -1,1 +1,4 @@
+# Runtime dependencies (the canonical list is in pyproject.toml; `uv sync` uses uv.lock).
 beautifulsoup4>=4.12
+curl_cffi>=0.7
+jsonschema>=4.20
