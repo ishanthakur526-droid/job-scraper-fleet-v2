@@ -122,7 +122,7 @@ def run_triage(runner: ClaudeRunner, buckets: Any, state: Any, config: dict[str,
 
 def _apply(buckets: Any, candidates: list[tuple[str, JobResult]], state: Any, cfg: dict[str, Any]) -> tuple[int, int, int, list[dict]]:
     promote_at = float(cfg.get("promote_confidence", 0.75))
-    demote_at = float(cfg.get("demote_confidence", 0.8))
+    demote_at = float(cfg.get("demote_confidence", 0.85))
     promoted = demoted = annotated = 0
     audit: list[dict] = []
     for where, row in candidates:

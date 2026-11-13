@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.0.1 - 2026-11-14
+
+Tune-ups from the first live Claude run (2026-11-13).
+
+### Changed
+
+- **Safer triage demotions:** Claude must now be at least 85% confident (was 80%) before a job is taken off a main list. Capgemini's "Order Management Specialist" (3-5 / 5-7 years) was demoted at 80%, although ranges starting at 3 years are within the rules. The two clear demotions that day (postings asking 4-6 and 4-7 years) were at 85% and 90% and still qualify.
+- **Stricter company scout:** the scout may only return job-board URLs it found in search results or opened, must open Workday/Oracle URLs before returning them, and falls back to the official careers page instead of guessing. On 2026-11-13, 4 of its 8 Workday suggestions were guessed addresses that do not exist (HTTP 422/500).
+
+### Added
+
+- Citi, Nasdaq and Target in India (Workday), verified by the company scout on 2026-11-13, are now in the tracked `config/boards.json` (Citi had 24 matching India jobs).
+
 ## 3.0.0 - 2026-11-13
 
 A full audit of v2 against its own outputs (709-row history, 10,775-row rejected-jobs audit from the 2026-11-13 run) and live probes of every source found the defects below. Each fix has a regression test.

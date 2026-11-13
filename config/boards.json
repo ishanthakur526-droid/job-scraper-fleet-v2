@@ -782,6 +782,34 @@
       }
     },
     {
+      "company": "Citi",
+      "source": "workday",
+      "token": "citi.wd5.myworkdayjobs.com|citi|2",
+      "priority_categories": [
+        "data_bi",
+        "excel_mis"
+      ],
+      "note": "verified by company scout 2026-11-13"
+    },
+    {
+      "company": "Nasdaq",
+      "source": "workday",
+      "token": "nasdaq.wd1.myworkdayjobs.com|nasdaq|Global_External_Site",
+      "priority_categories": [
+        "data_bi"
+      ],
+      "note": "verified by company scout 2026-11-13"
+    },
+    {
+      "company": "Target in India",
+      "source": "workday",
+      "token": "target.wd5.myworkdayjobs.com|target|targetcareers",
+      "priority_categories": [
+        "data_bi"
+      ],
+      "note": "verified by company scout 2026-11-13"
+    },
+    {
       "company": "LinkedIn (guest search)",
       "source": "linkedin_guest",
       "token": "data analyst",

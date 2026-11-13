@@ -1,6 +1,9 @@
 import json
 from pathlib import Path
 
+import pytest
+
+from jobfleet.config import load_llm_config
 from jobfleet.llm import ClaudeResult, ClaudeRunner, in_backoff, parse_envelope
 from jobfleet.models import JobResult
 from jobfleet.pipeline import RunBuckets
@@ -70,6 +73,20 @@ def test_triage_promotes_demotes_and_caches(tmp_path):
     second = FakeRunner(ClaudeResult(True, data={"verdicts": []}))
     run_triage(second, RunBuckets(main={"data_bi": [row("m1")]}, possible={}), state, {"triage": {}}, tmp_path)
     assert second.calls == 0  # verdict cached
+
+
+@pytest.mark.parametrize("config_source", ["shipped", "defaults"])
+def test_triage_keeps_rows_below_the_demotion_threshold(tmp_path, config_source):
+    # 2026-11-13: Capgemini 'Order Management Specialist' (3-5 / 5-7 yrs) was demoted at 0.80,
+    # although the user's rule accepts ranges that start at 3. Demotion now needs >= 0.85.
+    state = StateStore(tmp_path / "s.sqlite")
+    buckets = RunBuckets(main={"excel_mis": [row("m1", category="excel_mis")]}, possible={})
+    verdict = {"verdicts": [{"id": "0", "relevant": False, "category": "none", "early_career_fit": "unclear", "confidence": 0.8, "reason": "asks 3-5 or 5-7 years"}]}
+    config = load_llm_config(CONFIG) if config_source == "shipped" else {"triage": {}}
+    summary = run_triage(FakeRunner(ClaudeResult(True, data=verdict)), buckets, state, config, tmp_path)
+    assert "0 demoted" in summary
+    kept = buckets.main["excel_mis"]
+    assert [r.key for r in kept] == ["m1"] and "Claude: doubtful (0.80)" in kept[0].system_notes
 
 
 def test_triage_failure_sets_backoff_and_does_not_raise(tmp_path):
