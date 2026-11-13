@@ -8,9 +8,8 @@ from urllib.parse import parse_qs, quote_plus, unquote, urlparse
 
 from .http import FetchError, HttpClient
 
-
 ATS_URL_RE = re.compile(
-    r"https?://(?:jobs(?:\.eu)?\.lever\.co|boards\.greenhouse\.io|job-boards\.eu\.greenhouse\.io|jobs\.ashbyhq\.com|careers\.smartrecruiters\.com|jobs\.smartrecruiters\.com|[^/]*myworkdayjobs\.com|careers\.ey\.com|careers\.ltimindtree\.com)/[^\s\"'<>]+",
+    r"https?://(?:jobs(?:\.eu)?\.lever\.co|boards\.greenhouse\.io|job-boards\.eu\.greenhouse\.io|jobs\.ashbyhq\.com|careers\.smartrecruiters\.com|jobs\.smartrecruiters\.com|job-boards\.greenhouse\.io|[^/]*myworkdayjobs\.com|[^/]*myworkdaysite\.com|[^/]*\.oraclecloud\.com/hcmUI|careers\.ey\.com)/[^\s\"'<>]+",
     flags=re.I,
 )
 

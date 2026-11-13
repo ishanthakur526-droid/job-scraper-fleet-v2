@@ -30,3 +30,14 @@ env/
 Thumbs.db
 .vscode/
 .idea/
+
+# v3 local working dirs
+outputs_dev/
+outputs_replay/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.jsonl.gz
+*.egg-info/
+build/
+dist/

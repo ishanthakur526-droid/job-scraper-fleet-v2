@@ -1,4 +1,4 @@
-Company,Source,Token,Status,Jobs Found,Error,Retrieved At
-Example Analytics,greenhouse,exampleanalytics,ok,12,,2026-04-29T10:30:00+00:00
-Example Retail,workday,example.wd1.myworkdayjobs.com|example|Careers,ok,25,,2026-04-29T10:30:20+00:00
-Example SaaS,lever,examplesaas,empty,0,,2026-04-29T10:30:40+00:00
+Company,Source,Token,Status,Jobs Found,Duration (s),Hard Failure,Note,Error,Retrieved At
+Example Analytics,greenhouse,exampleanalytics,ok,12,1.4,,,,2026-11-13T10:30:00+00:00
+Example Retail,workday,example.wd1.myworkdayjobs.com|example|Careers,ok,25,9.8,,India facet locationCountry (country): 25 jobs,,2026-11-13T10:30:20+00:00
+Example SaaS,lever,examplesaas,quarantined,0,0.0,,quarantined until 2026-11-27,,2026-11-13T10:30:40+00:00

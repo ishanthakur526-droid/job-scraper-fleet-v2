@@ -1,98 +1,114 @@
-import unittest
+from pathlib import Path
 
-from jobfleet.models import Category, RawJob
-from jobfleet.pipeline import JobPipeline
+import pytest
+
+from jobfleet import pipeline as pipeline_module
+from jobfleet.classifier import Classifier
+from jobfleet.config import load_taxonomy
+from jobfleet.http import FetchError
+from jobfleet.models import Board, RawJob
+from jobfleet.pipeline import JobPipeline, dedupe_raw
+
+CONFIG = Path(__file__).resolve().parents[1] / "config"
+DESC = "Bengaluru. SQL dashboards, Excel reporting, analytics insights. 1-3 years of experience."
 
 
-def categories():
-    return [
-        Category(
-            id="data_bi",
-            name="Data & BI",
-            output="data_bi_roles_today.csv",
-            target_roles=["Data Analyst", "Operations Analyst"],
-            positive_keywords=["excel", "reporting", "analytics", "insights"],
-        ),
-        Category(
-            id="research",
-            name="Research",
-            output="research_roles_today.csv",
-            target_roles=["Research Analyst"],
-            positive_keywords=["research", "market"],
-        ),
-        Category(
-            id="excel_mis",
-            name="Excel / MIS",
-            output="excel_sheets_roles_today.csv",
-            target_roles=["Data Operations Analyst", "Operations Analyst"],
-            positive_keywords=["excel", "mis", "reporting"],
-        ),
+@pytest.fixture(scope="module")
+def classifier():
+    categories, adjacent = load_taxonomy(CONFIG)
+    return Classifier(categories, adjacent)
+
+
+def raw(title, company="Acme", url=None, source="lever", location="Bengaluru, India", key="", **kw):
+    url = url or f"https://example.com/{company}/{title}/{key}".replace(" ", "-")
+    return RawJob(company=company, title=title, location=location, url=url, description=kw.pop("description", DESC), source=source, stable_key=key, **kw)
+
+
+def test_category_cap_moves_extra_rows_to_overflow_instead_of_dropping(classifier):
+    jobs = [raw(f"Data Analyst {letter}", company=f"Co{c}", key=f"k{c}{letter}") for c in range(6) for letter in "abcdefghij"]
+    pipeline = JobPipeline(http=None, classifier=classifier, max_per_category=40, per_company_cap=8)
+    buckets = pipeline.build(pipeline.evaluate(jobs))
+    main, overflow = buckets.main["data_bi"], buckets.overflow["data_bi"]
+    assert len(main) == 40 and len(main) + len(overflow) == 60
+    per_company = {}
+    for row in main:
+        per_company[row.company] = per_company.get(row.company, 0) + 1
+    assert max(per_company.values()) <= 8
+    assert len(buckets.recorded()) == 60  # every accepted job is persisted
+
+
+def test_identical_requisitions_collapse_into_one_row(classifier):
+    jobs = [raw("Business Analyst, ROC, ROC", company="Amazon", source="amazon_jobs", key=f"amazon_jobs:{n}", location="Hyderabad, Telangana, IND", url=f"https://www.amazon.jobs/en/jobs/{n}/x") for n in (1, 2, 3)]
+    pipeline = JobPipeline(http=None, classifier=classifier)
+    rows = pipeline.build(pipeline.evaluate(jobs)).main["data_bi"]
+    assert len(rows) == 1
+    assert len(rows[0].group_keys) == 2 and "+2 more" in rows[0].system_notes
+
+
+def test_cross_source_duplicates_collapse(classifier):
+    jobs = [
+        raw("Business Data Analyst", company="Accenture", source="accenture", key="accenture:1", location="Bengaluru"),
+        raw("Business Data Analyst", company="Accenture", source="workday", key="workday:accenture:1", location="Bengaluru, India"),
     ]
+    pipeline = JobPipeline(http=None, classifier=classifier)
+    rows = pipeline.build(pipeline.evaluate(jobs)).main["data_bi"]
+    assert len(rows) == 1 and len(rows[0].group_keys) == 1
 
 
-def raw_job(title: str, description: str = "India based role. Excel reporting analytics research market.") -> RawJob:
-    return RawJob(
-        company="Example",
-        title=title,
-        location="Bangalore, India",
-        url="https://example.com/job/1",
-        description=description,
-        source="test",
-    )
+def test_same_requisition_on_two_sites_is_deduped_by_stable_key():
+    jobs = [raw("Analyst", key="workday:erm:r1", url="https://erm/a"), raw("Analyst", key="workday:erm:r1", url="https://erm/b", description="longer " * 50)]
+    kept = dedupe_raw(jobs)
+    assert len(kept) == 1 and kept[0].url == "https://erm/b"
 
 
-class PipelineClassificationTests(unittest.TestCase):
-    def test_job_is_assigned_to_only_one_category(self):
-        pipeline = JobPipeline(http=None)
-        buckets = pipeline.classify([raw_job("Research Analyst --Data Operations")], categories(), 25)
-        total = sum(len(items) for items in buckets.values())
-
-        self.assertEqual(total, 1)
-        self.assertEqual(len(buckets["research"]), 1)
-
-    def test_tie_prefers_excel_mis_over_broad_data_bi(self):
-        pipeline = JobPipeline(http=None)
-        buckets = pipeline.classify([raw_job("Operations Analyst", "India based role. Excel reporting.")], categories(), 25)
-        total = sum(len(items) for items in buckets.values())
-
-        self.assertEqual(total, 1)
-        self.assertEqual(len(buckets["excel_mis"]), 1)
-
-    def test_false_negative_layer_keeps_borderline_jobs_out_of_main_csv(self):
-        pipeline = JobPipeline(http=None)
-        job = raw_job("Associate - Customer Insights", "India based role. Analytics reporting.")
-        buckets = pipeline.classify([job], categories(), 25)
-        possible, rejected = pipeline.discover_false_negatives([job], categories(), buckets)
-
-        self.assertEqual(sum(len(items) for items in buckets.values()), 0)
-        self.assertGreaterEqual(sum(len(items) for items in possible.values()), 1)
-        self.assertEqual(rejected[0].reason, "weak_role_match")
-
-    def test_non_india_rejection_is_audited_not_possible(self):
-        pipeline = JobPipeline(http=None)
-        job = RawJob(
-            company="Example",
-            title="Data Analyst",
-            location="London, United Kingdom",
-            url="https://example.com/job/2",
-            description="Analytics reporting role.",
-            source="test",
-        )
-        buckets = pipeline.classify([job], categories(), 25)
-        possible, rejected = pipeline.discover_false_negatives([job], categories(), buckets)
-
-        self.assertEqual(sum(len(items) for items in possible.values()), 0)
-        self.assertEqual(rejected[0].reason, "non_india")
-
-    def test_possible_match_excludes_engineering_titles(self):
-        pipeline = JobPipeline(http=None)
-        job = raw_job("Software Development Engineer - Analytics Platform", "India based role. Analytics reporting.")
-        buckets = pipeline.classify([job], categories(), 25)
-        possible, rejected = pipeline.discover_false_negatives([job], categories(), buckets)
-
-        self.assertEqual(sum(len(items) for items in possible.values()), 0)
-        self.assertEqual(rejected[0].reason, "weak_role_match")
+def test_routes_and_prefilter_audit(classifier):
+    jobs = [
+        raw("Data Analyst", flags={"aggregator": True}, key="a"),
+        raw("Financial Analyst", key="b", description="Mumbai. FP&A forecasting in Excel. 1-2 years of experience."),
+        raw("Welder", flags={"prefilter": "irrelevant_title"}, key="c"),
+    ]
+    pipeline = JobPipeline(http=None, classifier=classifier)
+    buckets = pipeline.build(pipeline.evaluate(jobs))
+    assert [r.key for r in buckets.aggregator] == ["a"]
+    assert [r.key for r in buckets.adjacent] == ["b"]
+    assert buckets.rejected[0].stage == "prefilter" and buckets.rejected[0].reason == "prefilter:irrelevant_title"
 
 
-if __name__ == "__main__":
-    unittest.main()
+class _Adapter:
+    def __init__(self, behaviour):
+        self.behaviour = behaviour
+        self.partial = False
+        self.notes = []
+
+    def list_jobs(self, board):
+        if isinstance(self.behaviour, Exception):
+            raise self.behaviour
+        return self.behaviour
+
+
+def test_collection_isolates_board_failures_and_skips_quarantined(classifier, monkeypatch):
+    behaviours = {
+        "ok": [raw("Data Analyst", key="x")],
+        "dead": FetchError("HTTP 404", status=404, hard=True),
+        "bug": KeyError("unexpected"),
+    }
+    calls = []
+
+    def fake_adapter_for(source, http, context=None):
+        calls.append(source)
+        return _Adapter(behaviours[source])
+
+    monkeypatch.setattr(pipeline_module, "adapter_for", fake_adapter_for)
+    boards = [Board("A", "ok", "t"), Board("B", "dead", "t"), Board("C", "bug", "t"), Board("D", "ok", "q")]
+    pipeline = JobPipeline(http=None, classifier=classifier, workers=4)
+    jobs, health = pipeline.collect_from_boards(boards, quarantined={boards[3].key: "2026-12-01T00:00:00+00:00"})
+    statuses = [(h.company, h.status, h.hard_failure) for h in health]
+    assert statuses == [("A", "ok", False), ("B", "failed", True), ("C", "failed", False), ("D", "quarantined", False)]
+    assert len(jobs) == 1 and jobs[0].board_key == boards[0].key
+    assert calls.count("ok") == 1
+
+
+def test_multi_location_jobs_show_the_indian_office_first(classifier):
+    job = raw("Accounts Receivable Analyst", location="Colombo, Sri Lanka", locations=["IND-Bangalore-A, RMZ Infinity"], country_codes=["Sri Lanka"], key="workday:lseg:r1")
+    rows = JobPipeline(http=None, classifier=classifier).build(JobPipeline(http=None, classifier=classifier).evaluate([job])).main["excel_mis"]
+    assert rows[0].location == "IND-Bangalore-A, RMZ Infinity (also Colombo, Sri Lanka)"

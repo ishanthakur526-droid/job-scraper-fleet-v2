@@ -4,343 +4,808 @@
       "company": "HighLevel",
       "source": "lever",
       "token": "gohighlevel",
-      "priority_categories": ["data_bi", "excel_mis"]
+      "priority_categories": [
+        "data_bi",
+        "excel_mis"
+      ]
     },
     {
       "company": "Hevo Data",
       "source": "lever",
       "token": "hevodata",
-      "priority_categories": ["data_bi"]
-    },
-    {
-      "company": "Highspot",
-      "source": "lever",
-      "token": "highspot",
-      "priority_categories": ["data_bi"]
+      "priority_categories": [
+        "data_bi"
+      ]
     },
     {
       "company": "Aera Technology",
       "source": "lever",
       "token": "aeratechnology",
-      "priority_categories": ["excel_mis", "data_bi"]
+      "priority_categories": [
+        "excel_mis",
+        "data_bi"
+      ]
     },
     {
       "company": "Coupa",
       "source": "lever",
       "token": "coupa",
-      "priority_categories": ["excel_mis", "data_bi"]
+      "priority_categories": [
+        "excel_mis",
+        "data_bi"
+      ]
     },
     {
       "company": "Wayground",
       "source": "lever",
       "token": "Wayground",
-      "priority_categories": ["excel_mis", "data_bi"]
+      "priority_categories": [
+        "excel_mis",
+        "data_bi"
+      ]
     },
     {
       "company": "Dozee",
       "source": "lever",
       "token": "dozee",
-      "priority_categories": ["excel_mis"]
+      "priority_categories": [
+        "excel_mis"
+      ]
     },
     {
       "company": "Fam",
       "source": "lever",
       "token": "fampay",
-      "priority_categories": ["excel_mis", "data_bi"]
+      "priority_categories": [
+        "excel_mis",
+        "data_bi"
+      ]
     },
     {
       "company": "Wahed",
       "source": "lever",
       "token": "wahed.com",
-      "priority_categories": ["excel_mis", "research"]
-    },
-    {
-      "company": "OakNorth",
-      "source": "lever",
-      "token": "oaknorth.ai",
-      "priority_categories": ["excel_mis", "data_bi"]
+      "priority_categories": [
+        "excel_mis",
+        "research"
+      ]
     },
     {
       "company": "Resilinc",
       "source": "lever",
       "token": "resilinc",
-      "priority_categories": ["excel_mis", "data_bi"]
+      "priority_categories": [
+        "excel_mis",
+        "data_bi"
+      ]
     },
     {
       "company": "Tala",
       "source": "lever",
       "token": "tala",
-      "priority_categories": ["data_bi", "excel_mis"]
+      "priority_categories": [
+        "data_bi",
+        "excel_mis"
+      ]
     },
     {
       "company": "Jobgether",
       "source": "lever",
       "token": "jobgether",
-      "priority_categories": ["data_bi", "research", "excel_mis"]
+      "priority_categories": [
+        "data_bi",
+        "research",
+        "excel_mis"
+      ],
+      "aggregator": true,
+      "note": "Remote-jobs aggregator: matches go to aggregator_review_today.csv",
+      "options": {
+        "params": {
+          "location": "India"
+        },
+        "timeout": 60
+      }
     },
     {
       "company": "Dun & Bradstreet",
       "source": "lever",
       "token": "dnb",
-      "priority_categories": ["research", "excel_mis"]
-    },
-    {
-      "company": "JioStar",
-      "source": "lever",
-      "token": "jiostar",
-      "priority_categories": ["data_bi"]
+      "priority_categories": [
+        "research",
+        "excel_mis"
+      ]
     },
     {
       "company": "Lightcast",
       "source": "lever",
       "token": "economicmodeling",
-      "priority_categories": ["data_bi", "research"]
+      "priority_categories": [
+        "data_bi",
+        "research"
+      ]
     },
     {
       "company": "Brillio",
       "source": "lever",
       "token": "brillio-2",
-      "priority_categories": ["data_bi"]
+      "priority_categories": [
+        "data_bi"
+      ]
     },
     {
       "company": "AlphaSense",
       "source": "greenhouse",
       "token": "alphasense",
-      "priority_categories": ["data_bi", "research"]
+      "priority_categories": [
+        "data_bi",
+        "research"
+      ]
     },
     {
       "company": "Fractal Analytics",
       "source": "workday",
       "token": "fractal.wd1.myworkdayjobs.com|fractal|Careers",
-      "priority_categories": ["data_bi", "research"]
+      "priority_categories": [
+        "data_bi",
+        "research"
+      ]
     },
     {
       "company": "Forrester",
       "source": "workday",
       "token": "forrester.wd501.myworkdayjobs.com|forrester|careers",
-      "priority_categories": ["research", "data_bi"]
+      "priority_categories": [
+        "research",
+        "data_bi"
+      ]
     },
     {
       "company": "Accenture",
       "source": "accenture",
       "token": "analyst",
-      "priority_categories": ["data_bi", "research", "excel_mis"]
+      "priority_categories": [
+        "data_bi",
+        "research",
+        "excel_mis"
+      ]
     },
     {
       "company": "Accenture",
       "source": "accenture",
       "token": "data analyst",
-      "priority_categories": ["data_bi", "excel_mis"]
+      "priority_categories": [
+        "data_bi",
+        "excel_mis"
+      ]
     },
     {
       "company": "Accenture",
       "source": "accenture",
       "token": "business analyst",
-      "priority_categories": ["data_bi", "excel_mis", "research"]
+      "priority_categories": [
+        "data_bi",
+        "excel_mis",
+        "research"
+      ]
     },
     {
       "company": "Amazon",
       "source": "amazon_jobs",
       "token": "analyst",
-      "priority_categories": ["data_bi", "excel_mis", "research"]
+      "priority_categories": [
+        "data_bi",
+        "excel_mis",
+        "research"
+      ]
     },
     {
       "company": "Amazon",
       "source": "amazon_jobs",
       "token": "business analyst",
-      "priority_categories": ["data_bi", "excel_mis"]
+      "priority_categories": [
+        "data_bi",
+        "excel_mis"
+      ]
     },
     {
       "company": "Amazon",
       "source": "amazon_jobs",
       "token": "finance analyst",
-      "priority_categories": ["excel_mis", "data_bi"]
+      "priority_categories": [
+        "excel_mis",
+        "data_bi"
+      ]
     },
     {
       "company": "Capgemini",
       "source": "capgemini",
       "token": "analyst",
-      "priority_categories": ["data_bi", "research", "excel_mis"]
+      "priority_categories": [
+        "data_bi",
+        "research",
+        "excel_mis"
+      ]
     },
     {
       "company": "Capgemini",
       "source": "capgemini",
       "token": "data",
-      "priority_categories": ["data_bi", "excel_mis"]
+      "priority_categories": [
+        "data_bi",
+        "excel_mis"
+      ]
     },
     {
       "company": "Cognizant",
       "source": "paginated_html",
       "token": "https://careers.cognizant.com/india-en/jobs/?keyword=analyst&location=Chennai&page={page}",
-      "priority_categories": ["data_bi", "research", "excel_mis"]
+      "priority_categories": [
+        "data_bi",
+        "research",
+        "excel_mis"
+      ]
     },
     {
       "company": "Cognizant",
       "source": "paginated_html",
       "token": "https://careers.cognizant.com/india-en/jobs/?keyword=analyst&location=Hyderabad&page={page}",
-      "priority_categories": ["data_bi", "research", "excel_mis"]
+      "priority_categories": [
+        "data_bi",
+        "research",
+        "excel_mis"
+      ]
     },
     {
       "company": "Deloitte",
       "source": "paginated_html",
       "token": "https://apply.deloitte.com/en_US/careers/SearchJobs/India/?jobRecordsPerPage=10&jobOffset={offset}",
-      "priority_categories": ["data_bi", "excel_mis", "research"]
+      "priority_categories": [
+        "data_bi",
+        "excel_mis",
+        "research"
+      ]
     },
     {
       "company": "EY",
       "source": "successfactors",
       "token": "https://careers.ey.com/ey/search/?q=analyst&locationsearch=India",
-      "priority_categories": ["data_bi", "research", "excel_mis"]
+      "priority_categories": [
+        "data_bi",
+        "research",
+        "excel_mis"
+      ]
     },
     {
       "company": "EY",
       "source": "successfactors",
       "token": "https://careers.ey.com/ey/search/?q=data&locationsearch=India",
-      "priority_categories": ["data_bi", "research", "excel_mis"]
+      "priority_categories": [
+        "data_bi",
+        "research",
+        "excel_mis"
+      ]
     },
     {
       "company": "Gartner",
       "source": "workday",
       "token": "gartner.wd5.myworkdayjobs.com|gartner|EXT",
-      "priority_categories": ["research", "data_bi", "excel_mis"]
+      "priority_categories": [
+        "research",
+        "data_bi",
+        "excel_mis"
+      ]
     },
     {
       "company": "Kantar",
       "source": "workday",
       "token": "kantar.wd3.myworkdayjobs.com|kantar|KANTAR",
-      "priority_categories": ["research", "data_bi", "excel_mis"]
-    },
-    {
-      "company": "LTIMindtree",
-      "source": "successfactors",
-      "token": "https://careers.ltimindtree.com/search/?q=DATA&optionsFacetsDD_country=IN",
-      "priority_categories": ["data_bi", "excel_mis"]
+      "priority_categories": [
+        "research",
+        "data_bi",
+        "excel_mis"
+      ]
     },
     {
       "company": "Nielsen",
       "source": "smartrecruiters",
       "token": "TheNielsenCompany",
-      "priority_categories": ["data_bi", "research", "excel_mis"]
+      "priority_categories": [
+        "data_bi",
+        "research",
+        "excel_mis"
+      ]
     },
     {
       "company": "NielsenIQ",
       "source": "smartrecruiters",
       "token": "nielseniq",
-      "priority_categories": ["data_bi", "research", "excel_mis"]
+      "priority_categories": [
+        "data_bi",
+        "research",
+        "excel_mis"
+      ]
     },
     {
       "company": "PwC",
       "source": "workday",
       "token": "pwc.wd3.myworkdayjobs.com|pwc|Global_Experienced_Careers",
-      "priority_categories": ["data_bi", "research", "excel_mis"]
+      "priority_categories": [
+        "data_bi",
+        "research",
+        "excel_mis"
+      ]
     },
     {
       "company": "Salesforce",
       "source": "workday",
       "token": "salesforce.wd12.myworkdayjobs.com|salesforce|External_Career_Site",
-      "priority_categories": ["data_bi", "excel_mis"]
+      "priority_categories": [
+        "data_bi",
+        "excel_mis"
+      ]
     },
     {
       "company": "Thomson Reuters",
       "source": "workday",
       "token": "thomsonreuters.wd5.myworkdayjobs.com|thomsonreuters|External_Career_Site",
-      "priority_categories": ["data_bi", "research", "excel_mis"]
+      "priority_categories": [
+        "data_bi",
+        "research",
+        "excel_mis"
+      ]
     },
     {
       "company": "TCS",
       "source": "tcs_ibegin",
       "token": "analyst",
-      "priority_categories": ["excel_mis", "data_bi", "research"]
+      "priority_categories": [
+        "excel_mis",
+        "data_bi",
+        "research"
+      ],
+      "options": {
+        "pages": 3
+      }
     },
     {
       "company": "TCS",
       "source": "tcs_ibegin",
       "token": "power bi",
-      "priority_categories": ["data_bi", "excel_mis"]
+      "priority_categories": [
+        "data_bi",
+        "excel_mis"
+      ],
+      "options": {
+        "pages": 3
+      }
     },
     {
       "company": "Findem",
       "source": "lever",
       "token": "findem",
-      "priority_categories": ["research", "data_bi"]
+      "priority_categories": [
+        "research",
+        "data_bi"
+      ]
     },
     {
       "company": "Groww",
       "source": "greenhouse",
       "token": "groww",
-      "priority_categories": ["research", "data_bi"]
+      "priority_categories": [
+        "research",
+        "data_bi"
+      ]
     },
     {
       "company": "Janes",
       "source": "greenhouse",
       "token": "janes",
-      "priority_categories": ["research"]
+      "priority_categories": [
+        "research"
+      ]
     },
     {
       "company": "Flagright",
       "source": "ashby",
       "token": "flagright.com",
-      "priority_categories": ["data_bi"]
+      "priority_categories": [
+        "data_bi"
+      ]
     },
     {
       "company": "Mem0",
       "source": "ashby",
       "token": "mem0",
-      "priority_categories": ["data_bi"]
+      "priority_categories": [
+        "data_bi"
+      ]
     },
     {
       "company": "Parker",
       "source": "ashby",
       "token": "parker",
-      "priority_categories": ["data_bi"]
+      "priority_categories": [
+        "data_bi"
+      ]
     },
     {
       "company": "Commure",
       "source": "ashby",
       "token": "Commure",
-      "priority_categories": ["data_bi", "excel_mis"]
+      "priority_categories": [
+        "data_bi",
+        "excel_mis"
+      ]
     },
     {
       "company": "Riveron",
       "source": "ashby",
       "token": "riveron",
-      "priority_categories": ["excel_mis"]
+      "priority_categories": [
+        "excel_mis"
+      ]
     },
     {
       "company": "Pave Bank",
       "source": "ashby",
       "token": "PaveBank",
-      "priority_categories": ["excel_mis"]
-    },
-    {
-      "company": "Deel",
-      "source": "ashby",
-      "token": "Deel",
-      "priority_categories": ["excel_mis", "data_bi"]
+      "priority_categories": [
+        "excel_mis"
+      ]
     },
     {
       "company": "Bullpen Talent",
       "source": "ashby",
       "token": "bullpen-talent",
-      "priority_categories": ["excel_mis"]
+      "priority_categories": [
+        "excel_mis"
+      ]
     },
     {
       "company": "OpenGov",
       "source": "ashby",
       "token": "opengov",
-      "priority_categories": ["data_bi", "excel_mis"]
+      "priority_categories": [
+        "data_bi",
+        "excel_mis"
+      ]
     },
     {
       "company": "HackerOne",
       "source": "ashby",
       "token": "hackerone",
-      "priority_categories": ["excel_mis"]
+      "priority_categories": [
+        "excel_mis"
+      ]
     },
     {
       "company": "Allica Bank",
       "source": "ashby",
       "token": "allica-bank",
-      "priority_categories": ["excel_mis"]
+      "priority_categories": [
+        "excel_mis"
+      ]
+    },
+    {
+      "company": "Paytm",
+      "source": "lever",
+      "token": "paytm",
+      "priority_categories": [
+        "data_bi"
+      ]
+    },
+    {
+      "company": "Meesho",
+      "source": "lever",
+      "token": "meesho",
+      "priority_categories": [
+        "excel_mis"
+      ]
+    },
+    {
+      "company": "Nium",
+      "source": "lever",
+      "token": "nium",
+      "priority_categories": [
+        "data_bi"
+      ]
+    },
+    {
+      "company": "Saviynt",
+      "source": "lever",
+      "token": "saviynt",
+      "priority_categories": [
+        "data_bi"
+      ]
+    },
+    {
+      "company": "Aspora",
+      "source": "ashby",
+      "token": "Aspora",
+      "priority_categories": [
+        "data_bi",
+        "excel_mis"
+      ]
+    },
+    {
+      "company": "Model N",
+      "source": "lever",
+      "token": "modeln",
+      "priority_categories": [
+        "data_bi"
+      ]
+    },
+    {
+      "company": "Razorpay",
+      "source": "greenhouse",
+      "token": "razorpaysoftwareprivatelimited",
+      "priority_categories": [
+        "excel_mis"
+      ]
+    },
+    {
+      "company": "WPP Media",
+      "source": "greenhouse",
+      "token": "wpp",
+      "priority_categories": [
+        "data_bi",
+        "excel_mis"
+      ]
+    },
+    {
+      "company": "WNS Global Services",
+      "source": "smartrecruiters",
+      "token": "WNSGlobalServices144",
+      "priority_categories": [
+        "excel_mis"
+      ]
+    },
+    {
+      "company": "Accenture",
+      "source": "workday",
+      "token": "accenture.wd103.myworkdayjobs.com|accenture|AccentureCareers",
+      "priority_categories": [
+        "excel_mis",
+        "data_bi"
+      ]
+    },
+    {
+      "company": "Bosch Group",
+      "source": "smartrecruiters",
+      "token": "BoschGroup",
+      "priority_categories": [
+        "data_bi"
+      ]
+    },
+    {
+      "company": "Okta",
+      "source": "greenhouse",
+      "token": "okta",
+      "priority_categories": [
+        "data_bi"
+      ]
+    },
+    {
+      "company": "S&P Global",
+      "source": "workday",
+      "token": "spgi.wd5.myworkdayjobs.com|spgi|SPGI_Careers",
+      "priority_categories": [
+        "excel_mis",
+        "data_bi"
+      ]
+    },
+    {
+      "company": "Morningstar",
+      "source": "workday",
+      "token": "morningstar.wd5.myworkdayjobs.com|morningstar|Americas",
+      "priority_categories": [
+        "data_bi"
+      ]
+    },
+    {
+      "company": "LSEG",
+      "source": "workday",
+      "token": "lseg.wd3.myworkdayjobs.com|lseg|Careers",
+      "priority_categories": [
+        "data_bi",
+        "excel_mis"
+      ]
+    },
+    {
+      "company": "Clarivate",
+      "source": "workday",
+      "token": "clarivate.wd3.myworkdayjobs.com|clarivate|Clarivate_Careers",
+      "priority_categories": [
+        "data_bi",
+        "excel_mis"
+      ]
+    },
+    {
+      "company": "ERM",
+      "source": "workday",
+      "token": "erm.wd3.myworkdayjobs.com|erm|ERM_Careers",
+      "priority_categories": [
+        "excel_mis",
+        "data_bi"
+      ]
+    },
+    {
+      "company": "ERM",
+      "source": "workday",
+      "token": "erm.wd3.myworkdayjobs.com|erm|ERM_ExperiencedProfessionals",
+      "priority_categories": [
+        "excel_mis",
+        "data_bi"
+      ]
+    },
+    {
+      "company": "Mastercard",
+      "source": "workday",
+      "token": "mastercard.wd1.myworkdayjobs.com|mastercard|CorporateCareers",
+      "priority_categories": [
+        "data_bi"
+      ]
+    },
+    {
+      "company": "Invesco",
+      "source": "workday",
+      "token": "invesco.wd1.myworkdayjobs.com|invesco|IVZ",
+      "priority_categories": [
+        "data_bi"
+      ]
+    },
+    {
+      "company": "Ameriprise Financial",
+      "source": "workday",
+      "token": "ameriprise.wd5.myworkdayjobs.com|ameriprise|Ameriprise",
+      "priority_categories": [
+        "excel_mis",
+        "data_bi"
+      ]
+    },
+    {
+      "company": "Russell Investments",
+      "source": "workday",
+      "token": "russell.wd5.myworkdayjobs.com|russell|russellinvestments",
+      "priority_categories": [
+        "excel_mis",
+        "data_bi"
+      ]
+    },
+    {
+      "company": "Sprinklr",
+      "source": "workday",
+      "token": "sprinklr.wd1.myworkdayjobs.com|sprinklr|careers",
+      "priority_categories": [
+        "data_bi"
+      ]
+    },
+    {
+      "company": "Capco",
+      "source": "greenhouse",
+      "token": "capco",
+      "priority_categories": [
+        "data_bi"
+      ]
+    },
+    {
+      "company": "Genpact",
+      "source": "workday",
+      "token": "genpact.wd108.myworkdayjobs.com|genpact|External_Careers",
+      "priority_categories": [
+        "data_bi"
+      ]
+    },
+    {
+      "company": "Concentrix",
+      "source": "workday",
+      "token": "cnx.wd1.myworkdayjobs.com|cnx|external_global",
+      "priority_categories": [
+        "data_bi"
+      ]
+    },
+    {
+      "company": "Stripe",
+      "source": "greenhouse",
+      "token": "stripe",
+      "priority_categories": [
+        "excel_mis",
+        "data_bi"
+      ]
+    },
+    {
+      "company": "Quantiphi",
+      "source": "workday",
+      "token": "quantiphi.wd1.myworkdayjobs.com|quantiphi|Careers_at_Quantiphi",
+      "priority_categories": [
+        "data_bi"
+      ]
+    },
+    {
+      "company": "FactSet",
+      "source": "workday",
+      "token": "factset.wd108.myworkdayjobs.com|factset|FactSetCareers",
+      "priority_categories": [
+        "research"
+      ]
+    },
+    {
+      "company": "InMobi",
+      "source": "greenhouse",
+      "token": "inmobi",
+      "priority_categories": [
+        "excel_mis"
+      ]
+    },
+    {
+      "company": "BlackRock",
+      "source": "workday",
+      "token": "blackrock.wd1.myworkdayjobs.com|blackrock|BlackRock_Professional",
+      "priority_categories": [
+        "excel_mis",
+        "research"
+      ]
+    },
+    {
+      "company": "JPMorgan Chase",
+      "source": "oracle_hcm",
+      "token": "jpmc.fa.oraclecloud.com|CX_1001",
+      "priority_categories": [
+        "excel_mis",
+        "data_bi",
+        "research"
+      ],
+      "options": {
+        "keywords": [
+          "analyst"
+        ],
+        "location": "India"
+      }
+    },
+    {
+      "company": "Microsoft",
+      "source": "eightfold",
+      "token": "apply.careers.microsoft.com|microsoft.com",
+      "priority_categories": [
+        "data_bi"
+      ],
+      "options": {
+        "queries": [
+          "data analyst",
+          "business analyst",
+          "research analyst",
+          "operations analyst",
+          "financial analyst"
+        ],
+        "location": "India"
+      }
+    },
+    {
+      "company": "LinkedIn (guest search)",
+      "source": "linkedin_guest",
+      "token": "data analyst",
+      "priority_categories": [
+        "data_bi",
+        "research",
+        "excel_mis"
+      ],
+      "note": "Opt-in only (-IncludeLinkedIn): LinkedIn's terms prohibit scraping. No login; small request budget; stops on throttling.",
+      "options": {
+        "queries": [
+          "data analyst",
+          "business analyst",
+          "MIS analyst",
+          "MIS executive",
+          "research analyst",
+          "reporting analyst",
+          "market research analyst",
+          "business intelligence analyst"
+        ],
+        "pages": 2,
+        "max_requests": 40,
+        "max_details": 20
+      }
     }
   ],
   "seed_urls": []
