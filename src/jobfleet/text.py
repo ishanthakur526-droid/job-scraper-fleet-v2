@@ -1,145 +1,194 @@
+"""Text normalisation and whole-word keyword matching."""
+
 from __future__ import annotations
 
 import html
 import re
+from dataclasses import dataclass
+from functools import lru_cache
+
 from bs4 import BeautifulSoup
 
-
-INDIA_TERMS = {
-    "india", "bangalore", "bengaluru", "mumbai", "delhi", "gurgaon", "gurugram",
-    "noida", "hyderabad", "pune", "chennai", "kolkata", "ahmedabad", "remote india"
+_PUNCT_MAP = {
+    "–": "-",
+    "—": "-",
+    "−": "-",
+    "‘": "'",
+    "’": "'",
+    "“": '"',
+    "”": '"',
+    " ": " ",
+    "​": "",
+    "•": " • ",
+    "﻿": "",
 }
-
-EXCLUDED_TITLE_PATTERNS = (
-    r"(?<![a-z0-9])senior(?![a-z0-9])",
-    r"(?<![a-z0-9])sr\.?(?![a-z0-9])",
-    r"(?<![a-z0-9])lead(?![a-z0-9])",
-    r"(?<![a-z0-9])manager(?![a-z0-9])",
-    r"(?<![a-z0-9])principal(?![a-z0-9])",
-    r"(?<![a-z0-9])staff(?![a-z0-9])",
-    r"(?<![a-z0-9])director(?![a-z0-9])",
-    r"(?<![a-z0-9])head\s+of(?![a-z0-9])",
-    r"(?<![a-z0-9])architect(?![a-z0-9])",
-    r"(?<![a-z0-9])avp(?![a-z0-9])",
-    r"(?<![a-z0-9])dvp(?![a-z0-9])",
-    r"(?<![a-z0-9])vp(?![a-z0-9])",
-)
+_PUNCT_RE = re.compile("|".join(map(re.escape, _PUNCT_MAP)))
+_BLOCK_TAGS = ("p", "li", "br", "div", "tr", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "section", "td")
 
 
-def clean_html(value: str) -> str:
-    if not value:
-        return ""
-    text = BeautifulSoup(html.unescape(value), "html.parser").get_text(" ")
-    return normalize_space(text)
+def _fix_punct(value: str) -> str:
+    return _PUNCT_RE.sub(lambda m: _PUNCT_MAP[m.group(0)], value or "")
 
 
 def normalize_space(value: str) -> str:
-    replacements = {
-        "\u2013": "-",
-        "\u2014": "-",
-        "\u2018": "'",
-        "\u2019": "'",
-        "\u201c": '"',
-        "\u201d": '"',
-        "\u00a0": " ",
-    }
-    for old, new in replacements.items():
-        value = (value or "").replace(old, new)
-    return re.sub(r"\s+", " ", value or "").strip()
+    """Collapse all whitespace into single spaces (one line)."""
+    return re.sub(r"\s+", " ", _fix_punct(value)).strip()
 
 
-def is_india_job(location: str, description: str = "") -> bool:
-    location_l = (location or "").lower()
-    description_l = (description or "").lower()
-    if location_l:
-        if any(term in location_l for term in INDIA_TERMS):
-            return True
-        if "remote" in location_l and "india" in description_l[:1500]:
-            return True
+def normalize_block(value: str) -> str:
+    """Keep line structure but collapse spaces inside lines and blank lines."""
+    lines = (re.sub(r"[ \t\r\f\v]+", " ", line).strip() for line in _fix_punct(value).split("\n"))
+    return "\n".join(line for line in lines if line)
+
+
+def clean_html(value: str) -> str:
+    """HTML (possibly entity-escaped) -> readable text with one block per line."""
+    if not value:
+        return ""
+    text = html.unescape(str(value))
+    if "<" in text and ">" in text:
+        soup = BeautifulSoup(text, "html.parser")
+        for tag in soup.find_all(_BLOCK_TAGS):
+            tag.insert_before("\n")
+        text = soup.get_text(" ")
+    return normalize_block(text)
+
+
+# ---------------------------------------------------------------- boilerplate
+_BOILERPLATE_RE = re.compile(
+    r"\b(?:equal (?:employment )?opportunit|affirmative action|without regard to|regardless of (?:race|age|gender|religion)"
+    r"|race,? colou?r|gender identity|sexual orientation|protected (?:veteran|characteristic|status)|veteran status"
+    r"|disabilit(?:y|ies)|reasonable accommodation|diversity,? equity|equity,? (?:and )?inclusion|diverse and inclusive"
+    r"|inclusive (?:workplace|environment|culture)|eeo\b|e-verify|background check|privacy (?:notice|policy)"
+    r"|health insurance|medical insurance|paid time off|parental leave|wellness (?:program|benefit)|401\(?k\)?"
+    r"|recruitment (?:fraud|scam)|never ask (?:for|you)|fraudulent)",
+    re.IGNORECASE,
+)
+_ABOUT_RE = re.compile(
+    r"\b(?:founded in|headquartered in|our mission is|we are a (?:global|leading)|is a (?:global|leading|world)"
+    r"|for more information,? visit|learn more (?:about us|at))",
+    re.IGNORECASE,
+)
+
+
+def split_sentences(text: str) -> list[str]:
+    parts: list[str] = []
+    for line in normalize_block(text).split("\n"):
+        parts.extend(piece.strip() for piece in re.split(r"(?<=[.!?;])\s+(?=[A-Z0-9(•\-])", line) if piece.strip())
+    return parts
+
+
+def strip_boilerplate(text: str) -> str:
+    """Drop EEO / benefits / about-us sentences before keyword scoring."""
+    kept = [s for s in split_sentences(text) if not _BOILERPLATE_RE.search(s) and not _ABOUT_RE.search(s)]
+    return "\n".join(kept)
+
+
+# ------------------------------------------------------------- keyword match
+_SPECIAL_KEYWORDS = {
+    # "excel" the tool, not "excel in/at" or "excellent".
+    "excel": r"(?<![a-z0-9])(?:ms[- ]?|microsoft |advanced )?excel(?![a-z0-9])(?!\s+(?:in|at|as)\b)",
+    "mis": r"(?<![a-z0-9])mis(?![a-z0-9])(?!-)",
+    "equity": r"(?<![a-z0-9])equity(?![a-z0-9])(?!,? (?:and )?inclusion)",
+    "pivot": r"(?<![a-z0-9])pivot(?:s|ing)?(?: tables?| charts?)(?![a-z0-9])",
+    "research": r"(?<![a-z0-9])research(?:er|ers|ing)?(?![a-z0-9])",
+}
+
+
+@lru_cache(maxsize=4096)
+def keyword_regex(term: str) -> re.Pattern[str]:
+    term_l = term.strip().lower()
+    if term_l in _SPECIAL_KEYWORDS:
+        return re.compile(_SPECIAL_KEYWORDS[term_l], re.IGNORECASE)
+    words = [re.escape(word) for word in term_l.split()]
+    body = r"[\s\-/&]+".join(words)
+    plural = r"(?:s|es)?" if re.match(r"[a-z]", term_l[-1:] or "") else ""
+    return re.compile(rf"(?<![a-z0-9]){body}{plural}(?![a-z0-9])", re.IGNORECASE)
+
+
+def keyword_hits(text: str, terms: list[str]) -> list[str]:
+    return [term for term in terms if term and keyword_regex(term).search(text or "")]
+
+
+# --------------------------------------------------------- title normalising
+_TITLE_EXPANSIONS = (
+    (r"\bsr\b", "senior"),
+    (r"\bjr\b", "junior"),
+    (r"\bassoc\b", "associate"),
+    (r"\bexec\b", "executive"),
+    (r"\bmgr\b", "manager"),
+    (r"\bops\b", "operations"),
+    (r"\bbie\b", "business intelligence engineer"),
+    (r"\bbi\b", "business intelligence"),
+    (r"\bmi\b", "market intelligence"),
+    (r"\bar\b", "accounts receivable"),
+    (r"\bap\b", "accounts payable"),
+    (r"\bp2p\b", "procure to pay"),
+    (r"\bo2c\b", "order to cash"),
+    (r"\br2r\b", "record to report"),
+    (r"\bfpa\b", "fpa"),
+)
+_ROMAN_LEVELS = {"i": 1, "ii": 2, "iii": 3, "iv": 4}
+_LEVEL_DIGIT_RE = re.compile(r"\b(?:analyst|associate|engineer|specialist|executive|consultant|scientist|officer)\s+([1-5])\b")
+
+
+@dataclass(frozen=True)
+class NormalizedTitle:
+    raw: str
+    text: str
+    tokens: tuple[str, ...]
+    level: int | None
+
+
+@lru_cache(maxsize=8192)
+def normalize_title(title: str) -> NormalizedTitle:
+    raw = normalize_space(title)
+    t = raw.lower()
+    t = re.sub(r"\bfp\s*&\s*a\b", "fpa", t)
+    t = re.sub(r"\(\s*(?:contract|contractual|temporary|temp|fixed[- ]term)[^)]*\)", " ", t)
+    t = re.sub(r"\b(?:req(?:uisition)?|job)\s*(?:id|no|number)?\s*[:#]?\s*[a-z]{0,3}-?\d{4,}\b", " ", t)
+    t = re.sub(r"\b[a-z]{1,3}\d{5,}\b", " ", t)  # R01572558, JR368325
+    t = re.sub(r"(?:^|\s)[-–|#]\s*\d{4,}\b", " ", t)  # " - 11953"
+    t = re.sub(r"\b\d{5,}\b", " ", t)
+    t = t.replace("&", " and ")
+    t = re.sub(r"[^a-z0-9+#]+", " ", t)
+    for pattern, replacement in _TITLE_EXPANSIONS:
+        t = re.sub(pattern, replacement, t)
+    t = re.sub(r"\s+", " ", t).strip()
+    level = None
+    tokens = tuple(t.split())
+    for token in tokens:
+        if token in _ROMAN_LEVELS:
+            level = max(level or 0, _ROMAN_LEVELS[token])
+    digit = _LEVEL_DIGIT_RE.search(t)
+    if digit:
+        level = max(level or 0, int(digit.group(1)))
+    return NormalizedTitle(raw=raw, text=t, tokens=tokens, level=level)
+
+
+_STOP_TOKENS = frozenset({"and", "of", "the", "for", "a", "an", "in", "to", "with"})
+
+
+def phrase_in_title(norm: NormalizedTitle, phrase: str) -> bool:
+    target = normalize_title(phrase).text
+    return bool(target) and re.search(rf"(?<![a-z0-9]){re.escape(target)}(?![a-z0-9])", norm.text) is not None
+
+
+def tokens_in_title(norm: NormalizedTitle, phrase: str, window_slack: int = 1) -> bool:
+    """Order-invariant match: every role token appears close together in the title
+    ('Analyst, Data' = 'Data Analyst'), ignoring stop words such as 'and'/'of'."""
+    role_tokens = [tok for tok in normalize_title(phrase).tokens if tok not in _STOP_TOKENS]
+    if len(role_tokens) < 2:
         return False
-    return any(term in description_l[:1500] for term in INDIA_TERMS)
+    title_tokens = [tok for tok in norm.tokens if tok not in _STOP_TOKENS]
+    positions: list[int] = []
+    for tok in role_tokens:
+        if tok not in title_tokens:
+            return False
+        positions.append(title_tokens.index(tok))
+    return max(positions) - min(positions) <= len(role_tokens) - 1 + window_slack
 
 
-def contains_negative(text: str, negatives: list[str]) -> list[str]:
-    lowered = text.lower()
-    return [term for term in negatives if term.lower() in lowered]
-
-
-def has_excluded_seniority(title: str) -> bool:
-    lowered = title.lower()
-    return any(re.search(pattern, lowered) for pattern in EXCLUDED_TITLE_PATTERNS)
-
-
-def matched_role_terms(title: str, description: str, roles: list[str], positives: list[str]) -> list[str]:
-    title_l = title.lower()
-    text_l = f"{title} {description[:3000]}".lower()
-    matches: list[str] = []
-    for role in roles:
-        if _title_matches_role(title, role):
-            matches.append(role)
-    for term in positives:
-        if term.lower() in text_l and term not in matches:
-            matches.append(term)
-    return matches
-
-
-def role_score(title: str, description: str, roles: list[str], positives: list[str]) -> tuple[int, list[str]]:
-    matches = matched_role_terms(title, description, roles, positives)
-    score = 0
-    for role in roles:
-        if _title_matches_role(title, role):
-            score += 45
-    for term in positives:
-        if term.lower() in f"{title} {description[:2500]}".lower():
-            score += 5
-    return min(score, 100), matches
-
-
-def _title_matches_role(title: str, role: str) -> bool:
-    title_l = title.lower()
-    role_l = role.lower()
-    if role_l in title_l:
-        return True
-    title_tokens = set(re.findall(r"[a-z0-9]+", title_l))
-    role_tokens = [token for token in re.findall(r"[a-z0-9]+", role_l) if token not in {"and", "of"}]
-    if len(role_tokens) <= 2:
-        return False
-    return bool(role_tokens) and all(token in title_tokens for token in role_tokens)
-
-
-def parse_experience(description: str) -> tuple[bool, str, str]:
-    text = normalize_space(description).lower()
-    if not text:
-        return True, "Unspecified", "No description text available"
-
-    ranges = []
-    for match in re.finditer(r"(\d{1,2})\s*(?:-|–|to)\s*(\d{1,2})\s*(?:\+)?\s*(?:years?|yrs?)", text):
-        low, high = int(match.group(1)), int(match.group(2))
-        ranges.append((low, high, match.group(0)))
-
-    if ranges:
-        allowed = [label for low, _high, label in ranges if low <= 3]
-        if allowed:
-            return True, allowed[0].replace("yrs", "years"), ""
-        return False, ranges[0][2], "Rejected: minimum experience in all detected ranges is above 3 years"
-
-    explicit = []
-    for match in re.finditer(r"(?:minimum|min\.?|at least|minimum of)\s*(\d{1,2})\s*(?:\+)?\s*(?:years?|yrs?)", text):
-        years = int(match.group(1))
-        explicit.append((years, match.group(0), "minimum"))
-
-    for match in re.finditer(r"(\d{1,2})\s*\+\s*(?:years?|yrs?)", text):
-        years = int(match.group(1))
-        explicit.append((years, match.group(0), "plus"))
-
-    for match in re.finditer(r"(?:more than|over)\s*(\d{1,2})\s*(?:years?|yrs?)", text):
-        years = int(match.group(1)) + 1
-        explicit.append((years, match.group(0), "strictly-more"))
-
-    if explicit:
-        allowed = [label for years, label, _kind in explicit if years <= 3]
-        if allowed:
-            return True, allowed[0].replace("yrs", "years"), ""
-        return False, explicit[0][1], "Rejected: detected explicit minimum above 3 years"
-
-    return True, "Unspecified", ""
+def truncate(text: str, limit: int) -> str:
+    text = normalize_space(text)
+    return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
