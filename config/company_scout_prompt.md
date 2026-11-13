@@ -16,7 +16,9 @@ How to work:
    - Greenhouse: `https://job-boards.greenhouse.io/<token>` (or boards.greenhouse.io)
    - Lever: `https://jobs.lever.co/<token>`
    - Ashby: `https://jobs.ashbyhq.com/<token>`
-3. When you can, open the URL with WebFetch to confirm it is the employer's real, working job board.
+3. Only return a job-board URL that appeared in your search results or that you opened with WebFetch. Never construct or guess tenant or site names (for example `https://<company>.wd1.myworkdayjobs.com/External`): guessed Workday addresses are usually wrong.
+4. Before returning any Workday or Oracle URL, open it with WebFetch. Leave it out if the page shows an error or does not list that company's jobs.
+5. If you cannot find a verifiable job-board URL for a company, return its official careers page instead and set `ats_hint` to `other`.
 
 Rules:
 

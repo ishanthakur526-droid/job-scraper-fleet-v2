@@ -98,7 +98,7 @@ DEFAULT_LLM_CONFIG: dict[str, Any] = {
         "max_items": 60,
         "timeout_s": 240,
         "promote_confidence": 0.75,
-        "demote_confidence": 0.8,
+        "demote_confidence": 0.85,
     },
 }
 
