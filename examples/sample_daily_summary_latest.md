@@ -1,15 +1,23 @@
 # Job Scraper Daily Summary
 
-- Run ID: `20260429_160000`
-- Started: `2026-04-29T10:30:00+00:00`
-- Finished: `2026-04-29T10:45:00+00:00`
-- Boards checked: `60`
-- Board failures: `0`
-- Empty boards: `1`
-- Previously seen jobs missing today: `4`
+- Run ID: `20261113_160000` - duration `151.2 s`
+- Boards: `84` (ok 82, empty 1, quarantined 1)
+- Raw jobs collected: `7420`; previously seen jobs missing today: `6`
 
-| Category | Current Matches | New Today | Possible Matches | High Confidence | Needs Review |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Data & BI | 40 | 6 | 50 | 24 | 16 |
-| Research | 12 | 2 | 31 | 5 | 7 |
-| Excel / MIS | 28 | 4 | 36 | 10 | 18 |
+| Category | Current | New today | High confidence | Needs review | Possible | Overflow |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Data & BI | 40 | 5 | 24 | 16 | 22 | 30 |
+| Research | 6 | 1 | 1 | 5 | 3 | 0 |
+| Excel / MIS | 37 | 4 | 8 | 29 | 4 | 0 |
+
+- Adjacent roles (review file): `52` - Aggregator (Jobgether) review: `13`
+
+## New today - newly posted (8)
+
+| Category | Company | Role | Experience | Location | Posted | Link |
+| --- | --- | --- | --- | --- | --- | --- |
+| Data & BI | Example Analytics | Data Analyst | 1-3 years | Pune, Maharashtra, India | 2026-11-12 | [open](https://example.com/careers/data-analyst) |
+
+## Claude
+- Triage: judged 12 new borderline jobs in 41s; applied: 2 promoted, 1 demoted, 9 annotated
+- Company scout: not due (last success 2026-11-10, every 7 days)
