@@ -1,0 +1,26 @@
+name: Wrong or missing job
+description: A job was listed that should not be, or a job you expected is missing.
+labels: ["matching"]
+body:
+  - type: input
+    id: title
+    attributes: { label: Job title, placeholder: "Senior Data Analyst" }
+    validations: { required: true }
+  - type: input
+    id: location
+    attributes: { label: Location text exactly as shown, placeholder: "IND-BLR-Whitefield" }
+  - type: input
+    id: link
+    attributes: { label: Link to the posting }
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened and what you expected
+      description: If the job was rejected, paste its line from outputs/audit/rejected_jobs_today.csv (it includes the reason).
+    validations: { required: true }
+  - type: textarea
+    id: profile
+    attributes:
+      label: Relevant part of profile.toml
+      description: Usually [location] and [experience]. Remove anything personal.
+      render: toml

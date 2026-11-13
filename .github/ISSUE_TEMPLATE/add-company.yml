@@ -1,0 +1,15 @@
+name: Add a company
+description: Suggest a company for the shared list.
+labels: ["companies"]
+body:
+  - type: input
+    id: company
+    attributes: { label: Company }
+    validations: { required: true }
+  - type: input
+    id: link
+    attributes: { label: Careers page or job-board link }
+    validations: { required: true }
+  - type: input
+    id: countries
+    attributes: { label: Countries it hires in (optional) }

@@ -1,5 +1,34 @@
 # Changelog
 
+## 4.0.0 - 2026-11-14 · "Make it yours"
+
+JobFleet (formerly Job Scraper Fleet) now works for any country, experience level and kind of job. Everything that was hardcoded for one search (India, 0-3 years, three analyst families) comes from one file, `profile.toml`.
+
+### Added
+
+- **`profile.toml`**: where (countries, optional cities, remote include/only/exclude), level (years plus a seniority preset: student, early career, mid, senior, leadership) and what (any number of role families). It replaces `config/categories.json` and `config/llm.json`. Mistakes are reported in plain language ("'Inda' is not a country I know. Did you mean 'India'?").
+- **Worldwide locations**: a gazetteer of every country, state and 34,000 cities from GeoNames (CC BY 4.0, `scripts/build_gazetteer.py`). Ambiguous names are weighed by population, state codes are checked against the city ("San Jose, CA" vs "Toronto, CA"), regions such as EMEA/APAC depend on your countries, and the hand-curated India data became a country pack.
+- **Seniority levels and job domains** (`levels.py`) chosen per profile. A level or domain word inside one of your own titles is never held against a job ("Product Manager", "BI Engineer").
+- **Experience range** is configurable, with a new too-junior rule when `min_years` is above 0.
+- **Onboarding**: `jobfleet setup` (six questions; flags for automation; `--describe` with Claude), a library of 21 role families, 8 example profiles in `profiles/`, `my_companies.txt` and `jobfleet add-company`, `jobfleet doctor`, `jobfleet schedule`, and double-click `Setup.bat` / `Run.bat` (plus `setup.sh` / `run.sh`).
+- **Dashboard**: `outputs/dashboard.html`, one offline page with a tab per family, New today, Worth a look, Sources, search, filters, sorting and light/dark themes.
+- **Cloud mode**: `Set up my profile` (a GitHub form) and `Find jobs` (weekday runs published to GitHub Pages) workflows; the project's own repository also publishes a live demo with two example profiles.
+- Docs: customisation guide, cloud guide, how it works, adding sources, FAQ; MIT license; contributing and security policies; issue forms.
+
+### Changed
+
+- Sources take the profile's countries and search keywords: Workday's country filter is matched by name, SmartRecruiters and Amazon use country codes, Accenture (13 countries) and Capgemini (15) use their country sites (verified live), and Oracle, Microsoft, EY, LinkedIn and Jobgether use location text. `config/boards.json` became `config/companies.json` with `{keyword}` / `{country}` placeholders and `countries` for country-specific careers sites (the old file name still works).
+- Claude's triage and scout prompts are written from the profile.
+- Duplicate grouping uses the real city. v3 read "India" in locations such as "1401-G-India: …, Noida" as the city and merged the same Genpact title across Noida, Hyderabad and Jaipur.
+- Mid-level searches drop Manager and Architect titles (a live US check listed a "Software Development Manager").
+- Reject reasons are worded for any country (`outside_your_countries`, `location_unknown`); domain names are used in `non_target_title:<domain>`.
+
+### Verification
+
+- 237 offline tests (Windows and Linux CI), including every role family and example profile, the GitHub form, and 66 hand-labelled worldwide locations.
+- Replaying the 2026-11-13 run (7,519 postings) with the author's profile gives the same decision for every posting as v3; 9 listed rows differ only through the duplicate-grouping fix. Of 1,093 real location strings, 27 are classified differently from v3, all reviewed: 22 now correctly foreign (Glasgow, Stuttgart, Selangor...), 4 now correctly India ("Deoria, UP_East", "IN - HYDERABAD SKYVIEW"...), 1 bare "IN" now undecided.
+- Live runs on 2026-11-14: India analyst (82 listed, in line with v3), United States mid-level software engineer (502 listed) and United Kingdom early-career marketing (3 listed). Rows were reviewed by hand and every list passed `scripts/check_outputs.py`. That day EY's careers site was down for maintenance and Workday's wd5 cluster returned HTTP 521; both are reported as failed sources.
+
 ## 3.0.1 - 2026-11-14
 
 Tune-ups from the first live Claude run (2026-11-13).
