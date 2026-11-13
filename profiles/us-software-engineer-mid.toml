@@ -1,0 +1,51 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  JobFleet search profile — this one file decides WHERE you look, at what
+#  LEVEL, and for WHICH roles. Edit it in any text editor, save, run again.
+#  Re-create it any time with Setup.bat (or `jobfleet setup`).
+# ─────────────────────────────────────────────────────────────────────────────
+
+name = "United States · mid-level software engineer"
+
+# ── WHERE ──
+[location]
+countries = ["United States"]
+cities    = []   # optional: only these cities (remote jobs still count)
+remote    = "include"   # include | only | exclude
+
+# ── LEVEL ──
+[experience]
+min_years = 3
+max_years = 7
+level     = "mid"   # student | early_career | mid | senior | leadership
+
+# ── WHAT ── one [[role_family]] per kind of job; each gets its own list and dashboard tab.
+# Add titles freely (word order does not matter). Delete a block to drop that family.
+
+[[role_family]]
+id     = "software_engineering"
+name   = "Software Engineering"
+titles = [
+  "Software Engineer", "Software Developer", "Software Development Engineer", "Backend Engineer",
+  "Backend Developer", "Frontend Engineer", "Frontend Developer", "Full Stack Engineer",
+  "Full Stack Developer", "Web Developer", "Application Developer", "Java Developer", "Python Developer",
+  ".NET Developer", "Mobile Developer", "iOS Developer", "Android Developer", "Member of Technical Staff",
+]
+title_keywords = ["software", "backend", "frontend", "full stack", "web developer"]
+keywords = [
+  "python", "java", "javascript", "typescript", "react", "node", "golang", "c#", ".net", "sql", "aws",
+  "azure", "kubernetes", "docker", "microservices", "rest api", "git", "ci/cd",
+]
+domains = ["engineering"]   # job areas this family covers (otherwise filtered out)
+
+# Words typed into job-board search boxes (only some sources need them).
+[search]
+keywords = ["software engineer", "software developer", "backend engineer", "full stack developer"]
+
+# ── OPTIONAL: Claude (your Claude subscription via the Claude Code CLI; no API key) ──
+[ai]
+enabled = true
+
+[advanced.title_abbreviations]   # shorthands expanded in job titles
+sde = "software development engineer"
+swe = "software engineer"
+fullstack = "full stack"

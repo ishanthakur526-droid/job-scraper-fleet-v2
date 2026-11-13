@@ -1,0 +1,51 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  JobFleet search profile — this one file decides WHERE you look, at what
+#  LEVEL, and for WHICH roles. Edit it in any text editor, save, run again.
+#  Re-create it any time with Setup.bat (or `jobfleet setup`).
+# ─────────────────────────────────────────────────────────────────────────────
+
+name = "Singapore · finance & accounting"
+
+# ── WHERE ──
+[location]
+countries = ["Singapore"]
+cities    = []   # optional: only these cities (remote jobs still count)
+remote    = "include"   # include | only | exclude
+
+# ── LEVEL ──
+[experience]
+min_years = 0
+max_years = 4
+level     = "early_career"   # student | early_career | mid | senior | leadership
+
+# ── WHAT ── one [[role_family]] per kind of job; each gets its own list and dashboard tab.
+# Add titles freely (word order does not matter). Delete a block to drop that family.
+
+[[role_family]]
+id     = "finance_accounting"
+name   = "Finance & Accounting"
+titles = [
+  "Financial Analyst", "Finance Analyst", "FP&A Analyst", "Accountant", "Staff Accountant",
+  "Accounts Payable", "Accounts Receivable", "Finance Associate", "Audit Associate", "Tax Associate",
+  "Credit Analyst", "Treasury Analyst", "Accounts Executive", "Bookkeeper",
+]
+title_keywords = ["finance", "financial", "accounting", "accountant", "fpa", "audit", "tax", "treasury"]
+keywords = [
+  "excel", "gaap", "ifrs", "reconciliation", "sap", "oracle", "financial modeling", "budgeting",
+  "forecasting", "variance analysis", "accounts payable", "month-end close",
+]
+
+# Words typed into job-board search boxes (only some sources need them).
+[search]
+keywords = ["financial analyst", "accountant", "finance analyst"]
+
+# ── OPTIONAL: Claude (your Claude subscription via the Claude Code CLI; no API key) ──
+[ai]
+enabled = true
+
+[advanced.title_abbreviations]   # shorthands expanded in job titles
+ar = "accounts receivable"
+ap = "accounts payable"
+p2p = "procure to pay"
+o2c = "order to cash"
+r2r = "record to report"

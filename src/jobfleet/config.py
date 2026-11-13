@@ -30,6 +30,9 @@ def load_boards(config_dir: Path, include_disabled: bool = False) -> tuple[list[
     discovered_path = config_dir / "discovered_boards.json"
     if discovered_path.exists():
         boards.extend(_board(item) for item in _read_json(discovered_path).get("boards", []))
+    from .companies import default_path, load_my_companies
+
+    boards.extend(load_my_companies(default_path(config_dir)))
     boards = dedupe_boards(boards)
     if not include_disabled:
         boards = [board for board in boards if board.enabled]
@@ -80,10 +83,10 @@ def expand_boards(boards: list[Board], countries: list[str] | tuple[str, ...], k
             continue
         variants = [board]
         if _mentions(board, "{keyword}"):
-            limit = int(board.options.get("max_keywords", 3))
-            variants = [_fill(b, "{keyword}", kw) for b in variants for kw in list(keywords)[:limit]]
+            values = list(keywords)[: int(board.options.get("max_keywords", 3))]
+            variants = [_fill(b, "{keyword}", kw, len(values) > 1) for b in variants for kw in values]
         if _mentions(board, "{country}"):
-            variants = [_fill(b, "{country}", name) for b in variants for name in names]
+            variants = [_fill(b, "{country}", name, len(names) > 1) for b in variants for name in names]
         output.extend(variants)
     return dedupe_boards(output)
 
@@ -92,9 +95,11 @@ def _mentions(board: Board, placeholder: str) -> bool:
     return placeholder in board.token or placeholder in json.dumps(board.options)
 
 
-def _fill(board: Board, placeholder: str, value: str) -> Board:
+def _fill(board: Board, placeholder: str, value: str, several: bool) -> Board:
     options = json.loads(json.dumps(board.options).replace(placeholder, json.dumps(value)[1:-1]))
     token = board.token.replace(placeholder, quote_plus(value) if board.token.startswith("http") else value)
+    if token == board.token and several:  # only the options differ: keep the variants apart (Board.key)
+        options["variant"] = "|".join(filter(None, [str(options.get("variant", "")), value]))
     return dataclasses.replace(board, token=token, options=options)
 
 

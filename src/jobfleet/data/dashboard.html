@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JobFleet results</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234f46e5'/%3E%3Cpath d='M9 12h14v11a2 2 0 0 1-2 2H11a2 2 0 0 1-2-2zM13 12V9a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3' fill='none' stroke='white' stroke-width='2'/%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #f7f7fb; --panel: #ffffff; --ink: #14151a; --muted: #5d6272; --line: #e4e6ee; --accent: #4f46e5; --accent-ink: #ffffff;
+  --accent-soft: #eef0ff; --good: #0f7b4f; --good-soft: #e3f6ec; --warn: #9a5b00; --warn-soft: #fff3df; --bad: #b42318; --bad-soft: #fde8e7;
+  --new: #c2410c; --new-soft: #ffedd5; --shadow: 0 1px 2px rgba(20,21,26,.06), 0 4px 16px rgba(20,21,26,.05);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1117; --panel: #171a22; --ink: #eceef4; --muted: #9aa1b2; --line: #272b36; --accent: #8b83ff; --accent-ink: #0f1117;
+  --accent-soft: #23234a; --good: #4ade80; --good-soft: #12301f; --warn: #fbbf24; --warn-soft: #332709; --bad: #f87171; --bad-soft: #3a1515;
+  --new: #fb923c; --new-soft: #3a210d; --shadow: none;
+} }
+:root[data-theme="dark"] {
+  --bg: #0f1117; --panel: #171a22; --ink: #eceef4; --muted: #9aa1b2; --line: #272b36; --accent: #8b83ff; --accent-ink: #0f1117;
+  --accent-soft: #23234a; --good: #4ade80; --good-soft: #12301f; --warn: #fbbf24; --warn-soft: #332709; --bad: #f87171; --bad-soft: #3a1515;
+  --new: #fb923c; --new-soft: #3a210d; --shadow: none;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+a { color: var(--accent); }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
+header { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+.brand { display: flex; gap: 12px; align-items: center; }
+.logo { width: 40px; height: 40px; border-radius: 10px; background: var(--accent); display: grid; place-items: center; flex: none; }
+h1 { font-size: 22px; margin: 0; letter-spacing: -.01em; }
+.sub { color: var(--muted); font-size: 14px; }
+.theme { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 8px; padding: 6px 10px; cursor: pointer; font: inherit; font-size: 13px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 20px 0; }
+.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); }
+.kpi b { display: block; font-size: 26px; letter-spacing: -.02em; }
+.kpi span { color: var(--muted); font-size: 13px; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+.tab { border: 0; background: none; color: var(--muted); padding: 10px 12px; font: inherit; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tab[aria-selected="true"] { color: var(--ink); border-color: var(--accent); }
+.tab .count { font-weight: 500; color: var(--muted); margin-left: 4px; }
+.tools { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.tools input, .tools select { font: inherit; font-size: 14px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.tools input[type="search"] { flex: 1 1 240px; min-width: 0; }
+.tools label { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--line); cursor: pointer; user-select: none; white-space: nowrap; }
+th[data-sort]::after { content: " ↕"; opacity: .35; }
+th.asc::after { content: " ↑"; opacity: 1; } th.desc::after { content: " ↓"; opacity: 1; }
+td { padding: 11px 12px; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 14px; }
+tr:last-child td { border-bottom: 0; }
+.title a { color: var(--ink); font-weight: 600; text-decoration: none; }
+.title a:hover { color: var(--accent); text-decoration: underline; }
+.note { color: var(--muted); font-size: 12.5px; margin-top: 3px; }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+.p-high { background: var(--good-soft); color: var(--good); } .p-review { background: var(--warn-soft); color: var(--warn); }
+.p-possible, .p-claude { background: var(--accent-soft); color: var(--accent); } .p-new { background: var(--new-soft); color: var(--new); margin-right: 6px; }
+.p-ok { background: var(--good-soft); color: var(--good); } .p-fail { background: var(--bad-soft); color: var(--bad); } .p-other { background: var(--warn-soft); color: var(--warn); }
+.empty { padding: 32px; text-align: center; color: var(--muted); }
+.nw { white-space: nowrap; }
+.muted { color: var(--muted); }
+footer { margin-top: 28px; color: var(--muted); font-size: 13px; text-align: center; }
+@media (max-width: 760px) {
+  thead { display: none; }
+  table, tbody, tr, td { display: block; width: 100%; }
+  tr { border-bottom: 1px solid var(--line); padding: 8px 0; }
+  td { border: 0; padding: 4px 14px; }
+  td[data-label]::before { content: attr(data-label) ": "; color: var(--muted); font-size: 12px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/></svg></div>
+      <div><h1 id="name">JobFleet</h1><div class="sub" id="describe"></div></div>
+    </div>
+    <div style="text-align:right"><button class="theme" id="theme" type="button">Toggle theme</button><div class="sub" id="when"></div></div>
+  </header>
+  <section class="kpis" id="kpis" aria-label="Summary"></section>
+  <nav class="tabs" id="tabs" role="tablist"></nav>
+  <div class="tools" id="tools">
+    <input type="search" id="q" placeholder="Search title, company, location…" aria-label="Search">
+    <select id="tier" aria-label="Confidence"><option value="">All matches</option><option value="high_confidence">High confidence</option><option value="needs_review">Needs review</option></select>
+    <select id="company" aria-label="Company"><option value="">All companies</option></select>
+    <label><input type="checkbox" id="newonly"> New only</label>
+  </div>
+  <div class="card" id="view"></div>
+  <footer>Made with <a href="https://github.com/ishanthakur526-droid/jobfleet">JobFleet</a> · free and open source · jobs come from public company career sites · place data © GeoNames (CC BY 4.0)</footer>
+</div>
+<script type="application/json" id="data">/*__DATA__*/</script>
+<script>
+(function () {
+  "use strict";
+  var D = JSON.parse(document.getElementById("data").textContent);
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]; }); };
+  var store = { get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+
+  var saved = store.get("jobfleet-theme"); if (saved) document.documentElement.setAttribute("data-theme", saved);
+  $("theme").onclick = function () {
+    var dark = document.documentElement.getAttribute("data-theme") === "dark" || (!document.documentElement.getAttribute("data-theme") && matchMedia("(prefers-color-scheme: dark)").matches);
+    var next = dark ? "light" : "dark"; document.documentElement.setAttribute("data-theme", next); store.set("jobfleet-theme", next);
+  };
+
+  $("name").textContent = D.profile.name; $("describe").textContent = D.profile.describe;
+  document.title = D.profile.name + " · JobFleet";
+  $("when").textContent = "Updated " + new Date(D.generated).toLocaleString();
+
+  var all = [], tabs = [];
+  D.families.forEach(function (f) { tabs.push({ id: f.id, label: f.name, rows: f.rows, kind: "jobs" }); all = all.concat(f.rows); });
+  var fresh = all.filter(function (r) { return r.new; });
+  tabs.unshift({ id: "new", label: "New today", rows: fresh, kind: "jobs" });
+  if (D.adjacent.length) tabs.push({ id: "adjacent", label: "Related roles", rows: D.adjacent, kind: "jobs" });
+  if (D.possible.length) tabs.push({ id: "possible", label: "Worth a look", rows: D.possible, kind: "jobs" });
+  if (D.aggregator.length) tabs.push({ id: "aggregator", label: "Job-board finds", rows: D.aggregator, kind: "jobs" });
+  tabs.push({ id: "sources", label: "Sources", rows: D.sources, kind: "sources" });
+
+  var okSources = D.sources.filter(function (s) { return s.status === "ok" || s.status === "empty"; }).length;
+  var companies = {}; all.forEach(function (r) { companies[r.company] = 1; });
+  $("kpis").innerHTML = [
+    [all.length, "matching jobs"], [fresh.length, "new today"], [Object.keys(companies).length, "companies hiring"],
+    [okSources + "/" + D.sources.length, "sources checked"], [D.run.raw_jobs, "postings read"]
+  ].map(function (k) { return '<div class="kpi"><b>' + esc(k[0]) + "</b><span>" + esc(k[1]) + "</span></div>"; }).join("");
+
+  var state = { tab: store.get("jobfleet-tab") || (fresh.length ? "new" : (tabs[1] || tabs[0]).id), sort: "", dir: 1 };
+  if (!tabs.some(function (t) { return t.id === state.tab; })) state.tab = tabs[0].id;
+
+  function renderTabs() {
+    $("tabs").innerHTML = tabs.map(function (t) {
+      return '<button class="tab" role="tab" data-id="' + esc(t.id) + '" aria-selected="' + (t.id === state.tab) + '">' + esc(t.label) + '<span class="count">' + t.rows.length + "</span></button>";
+    }).join("");
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
+      b.onclick = function () { state.tab = b.getAttribute("data-id"); state.sort = ""; store.set("jobfleet-tab", state.tab); renderTabs(); fillCompanies(); render(); };
+    });
+  }
+  function current() { return tabs.filter(function (t) { return t.id === state.tab; })[0]; }
+  function fillCompanies() {
+    var t = current(), names = {};
+    if (t.kind === "jobs") t.rows.forEach(function (r) { names[r.company] = 1; });
+    $("company").innerHTML = '<option value="">All companies</option>' + Object.keys(names).sort().map(function (n) { return "<option>" + esc(n) + "</option>"; }).join("");
+    $("tools").style.display = t.kind === "jobs" ? "" : "none";
+  }
+  function tierPill(t) {
+    var map = { high_confidence: ["p-high", "High confidence"], needs_review: ["p-review", "Needs review"], possible_match: ["p-possible", "Possible"], claude_promoted: ["p-claude", "Claude pick"] };
+    var m = map[t] || ["p-review", t || ""]; return '<span class="pill ' + m[0] + '">' + esc(m[1]) + "</span>";
+  }
+  function sortRows(rows) {
+    if (!state.sort) return rows;
+    return rows.slice().sort(function (a, b) {
+      var x = a[state.sort], y = b[state.sort];
+      if (typeof x === "number" && typeof y === "number") return (x - y) * state.dir;
+      return String(x || "").localeCompare(String(y || "")) * state.dir;
+    });
+  }
+  function header(cols) {
+    return "<thead><tr>" + cols.map(function (c) {
+      var cls = state.sort === c[0] ? (state.dir > 0 ? "asc" : "desc") : "";
+      return "<th " + (c[0] ? 'data-sort="' + c[0] + '" class="' + cls + '"' : "") + ">" + c[1] + "</th>";
+    }).join("") + "</tr></thead>";
+  }
+  function render() {
+    var t = current(), view = $("view");
+    if (t.kind === "sources") {
+      var rows = sortRows(t.rows);
+      view.innerHTML = "<table>" + header([["company", "Company"], ["source", "Source"], ["status", "Status"], ["jobs", "Jobs read"], ["seconds", "Seconds"], ["", "Notes"]]) + "<tbody>" +
+        rows.map(function (s) {
+          var cls = s.status === "ok" || s.status === "empty" ? "p-ok" : (s.status === "failed" || s.status === "quarantined" ? "p-fail" : "p-other");
+          return '<tr><td data-label="Company">' + esc(s.company) + '</td><td data-label="Source" class="muted">' + esc(s.source) + '</td><td data-label="Status"><span class="pill ' + cls + '">' + esc(s.status) +
+            '</span></td><td data-label="Jobs read">' + esc(s.jobs) + '</td><td data-label="Seconds">' + esc(s.seconds) + '</td><td class="muted">' + esc(s.note) + "</td></tr>";
+        }).join("") + "</tbody></table>";
+    } else {
+      var q = $("q").value.trim().toLowerCase(), tier = $("tier").value, company = $("company").value, newOnly = $("newonly").checked;
+      var list = sortRows(t.rows.filter(function (r) {
+        if (tier && r.tier !== tier) return false;
+        if (company && r.company !== company) return false;
+        if (newOnly && !r.new) return false;
+        return !q || (r.title + " " + r.company + " " + r.location + " " + r.family).toLowerCase().indexOf(q) >= 0;
+      }));
+      if (!list.length) { view.innerHTML = '<div class="empty">' + (t.rows.length ? "No jobs match these filters." : "Nothing here today.") + "</div>"; }
+      else {
+        view.innerHTML = "<table>" + header([["title", "Role"], ["company", "Company"], ["location", "Location"], ["experience", "Experience"], ["posted", "Posted"], ["score", "Match"]]) + "<tbody>" +
+          list.map(function (r) {
+            return '<tr><td class="title">' + (r.new ? '<span class="pill p-new">NEW</span>' : "") + '<a href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.title) + "</a>" +
+              (r.note ? '<div class="note">' + esc(r.note) + "</div>" : "") + '</td><td data-label="Company">' + esc(r.company) + '</td><td data-label="Location">' + esc(r.location) +
+              '</td><td data-label="Experience">' + esc(r.experience) + '</td><td data-label="Posted" class="muted nw">' + esc(r.posted || r.first_seen) + '</td><td data-label="Match" class="nw">' + tierPill(r.tier) +
+              ' <span class="muted">' + esc(r.score) + "</span></td></tr>";
+          }).join("") + "</tbody></table>";
+      }
+    }
+    Array.prototype.forEach.call(view.querySelectorAll("th[data-sort]"), function (th) {
+      th.onclick = function () { var k = th.getAttribute("data-sort"); state.dir = state.sort === k ? -state.dir : (k === "score" || k === "posted" ? -1 : 1); state.sort = k; render(); };
+    });
+  }
+  ["q", "tier", "company", "newonly"].forEach(function (id) { $(id).addEventListener("input", render); $(id).addEventListener("change", render); });
+  renderTabs(); fillCompanies(); render();
+})();
+</script>
+</body>
+</html>

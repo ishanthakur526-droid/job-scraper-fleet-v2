@@ -2,8 +2,13 @@ from __future__ import annotations
 
 import argparse
 import logging
+import platform
+import re
+import shlex
+import subprocess
 import sys
 import time
+import webbrowser
 from collections import defaultdict
 from pathlib import Path
 
@@ -12,6 +17,7 @@ from .board_discovery import discover_boards_by_search, load_candidates_file, ve
 from .canary import run_canaries
 from .classifier import Classifier
 from .config import expand_boards, load_boards
+from .dashboard import write_dashboard
 from .discovery import build_queries, discover_urls
 from .exporters import export_category, export_new_only, export_overflow, export_quality_tiers, export_rejected_jobs, export_review_file
 from .http import HttpClient, OfflineHttpClient
@@ -77,7 +83,42 @@ def setup_logging(output_dir: Path, run_id_value: str, level: str) -> Path:
     return log_path
 
 
+COMMANDS = {
+    "setup": "create or change profile.toml by answering a few questions",
+    "run": "find jobs now (the default when no command is given)",
+    "dashboard": "open the latest results in your browser",
+    "add-company": "add a company by its careers-page link",
+    "doctor": "check that everything is set up",
+    "schedule": "run JobFleet automatically every day",
+}
+
+
 def main(argv: list[str] | None = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] in ("help", "commands"):
+        print("Usage: jobfleet <command> [options]\n")
+        for name, text in COMMANDS.items():
+            print(f"  {name:12} {text}")
+        return 0
+    command = argv.pop(0) if argv and argv[0] in COMMANDS else "run"
+    if command == "setup":
+        from .setup_wizard import main as setup_main
+
+        return setup_main(argv)
+    if command == "doctor":
+        from .doctor import main as doctor_main
+
+        return doctor_main(argv)
+    if command == "add-company":
+        return add_company_command(argv)
+    if command == "schedule":
+        return schedule_command(argv)
+    if command == "dashboard":
+        return dashboard_command(argv)
+    return run_command(argv)
+
+
+def run_command(argv: list[str]) -> int:
     args = build_parser().parse_args(argv)
     run_id_value = run_id()
     log_path = setup_logging(args.output_dir, run_id_value, args.log_level)
@@ -235,9 +276,64 @@ def run(args: argparse.Namespace, run_id_value: str) -> int:
         "_llm": llm_stats,
     }
     json_path, summary_path = write_run_report(output_dir, run_id_value, categories, buckets, new_rows, health, stats)
+    dashboard = write_dashboard(output_dir, profile, buckets, health, stats)
     state.export_csv_views(state_dir)
     state.close()
     log.info("Done in %.0fs. Summary: %s", time.monotonic() - started, summary_path)
+    log.info("Dashboard: %s (open it in any browser, or run `jobfleet dashboard`)", dashboard.resolve())
+    return 0
+
+
+def add_company_command(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="jobfleet add-company", description="Add a company by its careers-page or job-board link.")
+    parser.add_argument("url")
+    parser.add_argument("--name", default="", help="company name to show in your lists")
+    parser.add_argument("--config-dir", type=Path, default=Path("config"))
+    parser.add_argument("--no-check", action="store_true", help="save without checking the board")
+    args = parser.parse_args(argv)
+    from .companies import add_company, default_path
+
+    classifier = None
+    if not args.no_check:
+        try:
+            classifier = Classifier.from_profile(load_profile(default_profile_path(args.config_dir)))
+        except ProfileError:
+            classifier = None
+    return add_company(args.url, args.name, default_path(args.config_dir), HttpClient(), classifier)
+
+
+def schedule_command(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="jobfleet schedule", description="Run JobFleet automatically on weekdays.")
+    parser.add_argument("--time", default="16:00", help="time of day, 24h HH:MM (default 16:00)")
+    parser.add_argument("--name", default="JobFleet daily", help="Windows Task Scheduler task name")
+    args = parser.parse_args(argv)
+    if not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", args.time):
+        print("--time must look like 09:30 or 16:00")
+        return 2
+    root = Path.cwd()
+    if platform.system() == "Windows":
+        script = root / "install_scheduled_task.ps1"
+        if not script.exists():
+            print(f"Run this from the JobFleet folder ({script.name} not found here).")
+            return 2
+        command = ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script), "-TaskName", args.name, "-StartTime", args.time]
+        return subprocess.call(command)
+    hour, minute = args.time.split(":")
+    print("Add this line with `crontab -e` to run on weekdays:\n")
+    print(f"{int(minute)} {int(hour)} * * 1-5 cd {shlex.quote(str(root))} && ./run.sh >> outputs/logs/cron.log 2>&1")
+    return 0
+
+
+def dashboard_command(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="jobfleet dashboard", description="Open the latest results in your browser.")
+    parser.add_argument("--output-dir", type=Path, default=Path("outputs"))
+    args = parser.parse_args(argv)
+    page = args.output_dir / "dashboard.html"
+    if not page.exists():
+        print(f"No dashboard yet ({page}). Run JobFleet first: Run.bat or `jobfleet run`.")
+        return 1
+    webbrowser.open(page.resolve().as_uri())
+    print(f"Opened {page}")
     return 0
 
 

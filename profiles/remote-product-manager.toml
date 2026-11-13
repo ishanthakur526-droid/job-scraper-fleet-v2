@@ -1,0 +1,48 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  JobFleet search profile — this one file decides WHERE you look, at what
+#  LEVEL, and for WHICH roles. Edit it in any text editor, save, run again.
+#  Re-create it any time with Setup.bat (or `jobfleet setup`).
+# ─────────────────────────────────────────────────────────────────────────────
+
+name = "Remote · product manager (US/UK/EU time zones)"
+
+# ── WHERE ──
+[location]
+countries = ["United States", "United Kingdom", "Ireland"]
+cities    = []   # optional: only these cities (remote jobs still count)
+remote    = "only"   # include | only | exclude
+
+# ── LEVEL ──
+[experience]
+min_years = 3
+max_years = 7
+level     = "mid"   # student | early_career | mid | senior | leadership
+
+# ── WHAT ── one [[role_family]] per kind of job; each gets its own list and dashboard tab.
+# Add titles freely (word order does not matter). Delete a block to drop that family.
+
+[[role_family]]
+id     = "product_management"
+name   = "Product Management"
+titles = [
+  "Product Manager", "Associate Product Manager", "Product Owner", "Technical Product Manager",
+  "Product Specialist", "Product Operations Manager",
+]
+title_keywords = ["product manager", "product owner", "product management"]
+keywords = [
+  "roadmap", "stakeholders", "user research", "agile", "scrum", "product strategy", "a/b testing", "jira",
+  "requirements", "analytics", "go-to-market",
+]
+
+# Words typed into job-board search boxes (only some sources need them).
+[search]
+keywords = ["product manager", "product owner"]
+
+# ── OPTIONAL: Claude (your Claude subscription via the Claude Code CLI; no API key) ──
+[ai]
+enabled = true
+
+[advanced.title_abbreviations]   # shorthands expanded in job titles
+apm = "associate product manager"
+tpm = "technical product manager"
+pm = "product manager"

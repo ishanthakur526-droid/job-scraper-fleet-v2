@@ -47,7 +47,8 @@ class Board:
 
     @property
     def key(self) -> str:
-        return f"{self.source}|{self.token}".lower()
+        variant = self.options.get("variant") if isinstance(self.options, dict) else None
+        return f"{self.source}|{self.token}{'|' + str(variant) if variant else ''}".lower()
 
 
 @dataclass

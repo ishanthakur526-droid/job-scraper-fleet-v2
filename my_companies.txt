@@ -1,0 +1,6 @@
+# Your own companies: paste careers-page links, one per line, then run JobFleet again.
+# Works best with job-board links (Workday, Greenhouse, Lever, Ashby, SmartRecruiters, Oracle):
+#   https://boards.greenhouse.io/airbnb
+#   https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite
+# Optional name in front:   Airbnb | https://boards.greenhouse.io/airbnb
+# Not sure which link is the job board? Run:  jobfleet add-company https://company.com/careers

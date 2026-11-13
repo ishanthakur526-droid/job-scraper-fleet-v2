@@ -1,0 +1,70 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  JobFleet search profile — this one file decides WHERE you look, at what
+#  LEVEL, and for WHICH roles. Edit it in any text editor, save, run again.
+#  Re-create it any time with Setup.bat (or `jobfleet setup`).
+# ─────────────────────────────────────────────────────────────────────────────
+
+name = "Canada · customer success"
+
+# ── WHERE ──
+[location]
+countries = ["Canada"]
+cities    = []   # optional: only these cities (remote jobs still count)
+remote    = "include"   # include | only | exclude
+
+# ── LEVEL ──
+[experience]
+min_years = 2
+max_years = 6
+level     = "mid"   # student | early_career | mid | senior | leadership
+
+# ── WHAT ── one [[role_family]] per kind of job; each gets its own list and dashboard tab.
+# Add titles freely (word order does not matter). Delete a block to drop that family.
+
+[[role_family]]
+id     = "customer_success"
+name   = "Customer Success & Support"
+titles = [
+  "Customer Success Manager", "Customer Success Associate", "Customer Success Specialist",
+  "Customer Support Specialist", "Customer Service Representative", "Customer Support Representative",
+  "Client Success Associate", "Technical Support Specialist", "Customer Experience Associate",
+  "Support Specialist",
+]
+title_keywords = ["customer success", "customer support", "customer service", "client success", "customer experience"]
+keywords = [
+  "crm", "zendesk", "salesforce", "onboarding", "retention", "churn", "nps", "saas", "customer satisfaction",
+  "intercom",
+]
+domains = ["customer_support"]   # job areas this family covers (otherwise filtered out)
+
+[[role_family]]
+id     = "sales"
+name   = "Sales & Business Development"
+titles = [
+  "Sales Executive", "Sales Representative", "Business Development Executive",
+  "Business Development Representative", "Sales Development Representative", "Account Executive",
+  "Inside Sales Representative", "Sales Associate", "Account Manager", "Business Development Associate",
+]
+title_keywords = ["sales", "business development", "account executive"]
+keywords = [
+  "crm", "salesforce", "b2b", "pipeline", "quota", "lead generation", "negotiation", "prospecting",
+  "cold calling", "saas",
+]
+domains = ["sales"]   # job areas this family covers (otherwise filtered out)
+
+# Words typed into job-board search boxes (only some sources need them).
+[search]
+keywords = [
+  "customer success", "customer support", "customer service", "sales executive", "business development",
+  "account executive",
+]
+
+# ── OPTIONAL: Claude (your Claude subscription via the Claude Code CLI; no API key) ──
+[ai]
+enabled = true
+
+[advanced.title_abbreviations]   # shorthands expanded in job titles
+csm = "customer success manager"
+bdr = "business development representative"
+sdr = "sales development representative"
+bde = "business development executive"
