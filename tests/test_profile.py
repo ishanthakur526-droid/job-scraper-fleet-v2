@@ -132,3 +132,12 @@ def test_claude_prompts_follow_the_profile():
     template = (ROOT / "config" / "company_scout_prompt.md").read_text(encoding="utf-8")
     filled = fill_template(template, profile)
     assert "{{" not in filled and "United States" in filled and "software_engineering" in filled
+
+
+def test_triage_prompt_names_titles_that_are_allowed_with_conditions():
+    # 2026-11-14: Claude demoted 'Deputy Manager - Business Finance' (1.5-3 years) as a manager role because the prompt
+    # listed "Manager titles" as not wanted without saying junior-manager titles are allowed when the range fits.
+    profile = load_profile(ROOT / "profile.toml")
+    prompt = build_prompt(profile, profile.family_ids)
+    allowed = next(line for line in prompt.splitlines() if line.startswith("Allowed when"))
+    assert "Assistant/Associate/Deputy Manager" in allowed and "Senior Analyst/Associate/Executive" in allowed

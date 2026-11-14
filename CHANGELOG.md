@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.0.1 - 2026-11-14
+
+### Fixed
+
+- **Claude review prompt:** it now names the titles that are allowed when the posting's experience fits (for the author's profile: Assistant/Associate/Deputy Manager, Senior Analyst/Associate/Executive, level III+). In the first v4 run Claude removed "Deputy Manager - Business Finance" (1.5-3 years) and "Associate Manager, Accounts Receivable" (minimum 3 years) as "manager roles", although both fit the rules. The other four removals that day (postings asking 4+ years, or outside the role families) were correct.
+
 ## 4.0.0 - 2026-11-14 · "Make it yours"
 
 JobFleet (formerly Job Scraper Fleet) now works for any country, experience level and kind of job. Everything that was hardcoded for one search (India, 0-3 years, three analyst families) comes from one file, `profile.toml`.
