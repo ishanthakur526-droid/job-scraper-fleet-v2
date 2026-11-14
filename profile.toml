@@ -21,8 +21,9 @@ max_years = 3
 level     = "early_career"    # student | early_career | mid | senior | leadership
 
 # ── WHAT ─────────────────────────────────────────────────────────────────────
-# One [[role_family]] block per kind of job. Each family gets its own list
-# (CSV file + dashboard tab). Copy a block to add a family; delete one to drop it.
+# One [[role_family]] block per kind of job. Each family gets its own dashboard tab and
+# CSV files named after its id: data_bi.csv (every current match) and data_bi_new.csv (new this run).
+# Copy a block to add a family; delete one to drop it.
 #   titles          job titles you want (word order does not matter: "Analyst, Data" = "Data Analyst")
 #   title_keywords  a title containing one of these words is a weaker match
 #   keywords        words in the description that raise the score
@@ -31,7 +32,6 @@ level     = "early_career"    # student | early_career | mid | senior | leadersh
 [[role_family]]
 id     = "data_bi"
 name   = "Data & BI"
-output = "data_bi_roles_today.csv"
 titles = [
   "Data Analyst", "Business Intelligence Analyst", "BI Analyst", "Reporting Analyst", "Marketing Analyst",
   "Business Analyst", "Operations Analyst", "Insights Analyst", "Dashboard Developer",
@@ -46,7 +46,6 @@ exclude_title_words = ["lead data scientist", "machine learning engineer"]
 [[role_family]]
 id     = "research"
 name   = "Research"
-output = "research_roles_today.csv"
 titles = [
   "Research Analyst", "Market Research Analyst", "Competitive Intelligence Analyst", "Consumer Insights Analyst",
   "Secondary Research Analyst", "Equity Research Analyst", "Market Intelligence Analyst", "Market Intelligence",
@@ -59,7 +58,6 @@ exclude_description_phrases = ["phd required", "phd is required", "doctorate req
 [[role_family]]
 id     = "excel_mis"
 name   = "Excel / MIS"
-output = "excel_sheets_roles_today.csv"
 titles = [
   "MIS Executive", "MIS Analyst", "Excel Specialist", "Google Sheets Specialist", "Spreadsheet Developer", "Excel Analyst",
   "Excel Consultant", "Workbook Designer", "Data Operations Analyst", "Finance Operations Analyst",
@@ -72,7 +70,7 @@ title_keywords = ["mis", "excel", "reconciliation", "spreadsheet"]
 keywords = ["excel", "advanced excel", "mis", "spreadsheet", "google sheets", "vlookup", "pivot", "macros", "vba", "dashboard",
             "reporting", "reconciliation"]
 
-# Optional second-tier list (adjacent_roles_today.csv): related roles worth a look.
+# Optional second-tier list (related_roles.csv, "Related roles" tab): roles worth a look.
 [adjacent]
 titles = ["Financial Analyst", "Finance Analyst", "FP&A Analyst", "FP&A", "Pricing Analyst", "Risk Analyst", "Credit Analyst",
           "Content Analyst"]

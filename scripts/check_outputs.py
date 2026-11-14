@@ -20,7 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from jobfleet.exporters import MAIN_COLUMNS  # noqa: E402
+from jobfleet.exporters import JOB_BOARD_FINDS_FILE, MAIN_COLUMNS, RELATED_ROLES_FILE  # noqa: E402
 from jobfleet.geo import resolve  # noqa: E402
 from jobfleet.profile import load_profile  # noqa: E402
 
@@ -36,7 +36,7 @@ def main(output_dir: Path, profile_path: Path) -> int:
     profile = load_profile(profile_path)
     targets = tuple(profile.country_codes)
     problems: list[str] = []
-    names = [f.output for f in profile.families] + ([profile.adjacent.output] if profile.adjacent else []) + ["aggregator_review_today.csv"]
+    names = [f.output for f in profile.families] + [RELATED_ROLES_FILE, JOB_BOARD_FINDS_FILE]
     lists = [output_dir / name for name in names if (output_dir / name).exists()]
     total = 0
     for path in lists:

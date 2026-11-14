@@ -25,7 +25,7 @@ def minimal(**overrides):
 def test_shipped_profile_pins_the_v3_rules():
     profile = load_profile(ROOT / "profile.toml")
     rules = profile.rules
-    assert profile.family_ids == ["data_bi", "research", "excel_mis"] and profile.adjacent.output == "adjacent_roles_today.csv"
+    assert profile.family_ids == ["data_bi", "research", "excel_mis"] and profile.adjacent.output == "related_roles.csv"
     assert (profile.min_years, profile.max_years, profile.countries) == (0, 3, ["India"])
     assert rules.level_actions["intern"] == rules.level_actions["entry_program"] == "exclude"
     assert rules.level_actions["senior"] == rules.level_actions["junior_manager"] == "conditional"
@@ -69,7 +69,7 @@ def test_toml_syntax_error_is_explained(tmp_path):
 def test_defaults_are_derived_from_titles():
     profile = profile_from_dict(minimal())
     assert profile.family_ids == ["software_engineering"]
-    assert profile.families[0].output == "software_engineering_jobs_today.csv"
+    assert profile.families[0].output == "software_engineering.csv"
     assert "engineering" not in profile.rules.excluded_domains and "sales" in profile.rules.excluded_domains
     assert {"software", "backend", "engineer"} <= profile.rules.prefilter_terms
     assert profile.search_keywords == ["software engineer", "backend engineer"]

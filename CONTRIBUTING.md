@@ -2,7 +2,7 @@
 
 Thanks for helping. The most useful contributions are small and come with evidence:
 
-- **A wrong decision** (job in the wrong country, wrong level, missed job): open an issue with the job title, location text and, if possible, the line from `outputs/audit/rejected_jobs_today.csv`. Every fixed case becomes a test.
+- **A wrong decision** (job in the wrong country, wrong level, missed job): open an issue with the job title, location text and, if possible, the line from `outputs/audit/rejected_jobs.csv`. Every fixed case becomes a test.
 - **A company that should be included**: open an issue or a pull request adding it to `config/companies.json` ([how](docs/ADD_A_SOURCE.md)).
 - **A new job platform or role family**: open an issue first so we can agree on the approach.
 

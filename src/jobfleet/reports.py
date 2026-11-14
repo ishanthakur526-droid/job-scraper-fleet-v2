@@ -99,7 +99,7 @@ def write_run_report(output_dir: Path, run_id_value: str, categories: list[Categ
         )
     lines += [
         "",
-        f"- Adjacent roles (review file): `{len(buckets.adjacent)}` - Aggregator (Jobgether) review: `{len(buckets.aggregator)}`",
+        f"- Related roles (`related_roles.csv`): `{len(buckets.adjacent)}` - Job-board finds (`job_board_finds.csv`): `{len(buckets.aggregator)}`",
     ]
 
     all_new = [(category, row) for category in categories for row in new_rows.get(category.id, [])]

@@ -1,5 +1,14 @@
 """CSV outputs. Atomic writes; UTF-8 with BOM so Excel shows non-ASCII text
-correctly; a file locked by Excel never aborts the run (``*_new.csv`` fallback)."""
+correctly; a file locked by Excel never aborts the run (``*_copy.csv`` fallback).
+
+File names (per role family ``<id>``):
+    <id>.csv                 every job that matches now (refreshed each run)
+    <id>_new.csv             jobs first seen in this run
+    overflow/<id>.csv        matches beyond the per-list caps
+    worth_a_look/<id>.csv    borderline matches
+    audit/<id>.csv           the main list with every diagnostic column
+    audit/rejected_jobs.csv  every rejected job with the reason
+"""
 
 from __future__ import annotations
 
@@ -34,7 +43,7 @@ def write_csv(path: Path, columns: list[str], rows: Iterable[dict[str, Any]], bo
         writer.writeheader()
         for row in rows:
             writer.writerow(row)
-    for target in (path, path.with_name(f"{path.stem}_new{path.suffix}")):
+    for target in (path, path.with_name(f"{path.stem}_copy{path.suffix}")):
         try:
             os.replace(tmp, target)
             if target != path:
@@ -80,25 +89,26 @@ def audit_row(item: JobResult) -> dict[str, Any]:
     return row
 
 
+RELATED_ROLES_FILE = "related_roles.csv"
+JOB_BOARD_FINDS_FILE = "job_board_finds.csv"
+
+
 def export_category(output_dir: Path, category: Category, results: list[JobResult]) -> tuple[Path | None, Path | None]:
-    legacy = write_csv(output_dir / category.output, MAIN_COLUMNS, map(main_row, results))
-    audit = write_csv(output_dir / f"audit_{category.output}", AUDIT_COLUMNS, map(audit_row, results))
-    return legacy, audit
+    current = write_csv(output_dir / category.output, MAIN_COLUMNS, map(main_row, results))
+    audit = write_csv(output_dir / "audit" / f"{category.id}.csv", AUDIT_COLUMNS, map(audit_row, results))
+    return current, audit
 
 
 def export_new_only(output_dir: Path, category: Category, results: list[JobResult]) -> Path | None:
-    return write_csv(output_dir / f"new_only_{category.output}", MAIN_COLUMNS, map(main_row, results))
+    return write_csv(output_dir / f"{category.id}_new.csv", MAIN_COLUMNS, map(main_row, results))
 
 
-def export_quality_tiers(output_dir: Path, category: Category, results: list[JobResult], possible: list[JobResult]) -> None:
-    tier_dir = output_dir / "quality_tiers"
-    for tier in ("high_confidence", "needs_review"):
-        write_csv(tier_dir / f"{tier}_{category.output}", MAIN_COLUMNS, (main_row(r) for r in results if r.quality_tier == tier))
-    write_csv(tier_dir / f"possible_match_{category.output}", MAIN_COLUMNS, map(main_row, possible))
+def export_worth_a_look(output_dir: Path, category: Category, possible: list[JobResult]) -> Path | None:
+    return write_csv(output_dir / "worth_a_look" / f"{category.id}.csv", MAIN_COLUMNS, map(main_row, possible))
 
 
 def export_overflow(output_dir: Path, category: Category, results: list[JobResult]) -> Path | None:
-    return write_csv(output_dir / "overflow" / f"overflow_{category.output}", MAIN_COLUMNS, map(main_row, results))
+    return write_csv(output_dir / "overflow" / f"{category.id}.csv", MAIN_COLUMNS, map(main_row, results))
 
 
 def export_review_file(path: Path, results: list[JobResult]) -> Path | None:
@@ -107,7 +117,7 @@ def export_review_file(path: Path, results: list[JobResult]) -> Path | None:
 
 def export_rejected_jobs(output_dir: Path, rejected: list[RejectedJob]) -> Path | None:
     return write_csv(
-        output_dir / "audit" / "rejected_jobs_today.csv",
+        output_dir / "audit" / "rejected_jobs.csv",
         REJECTION_COLUMNS,
         (
             {

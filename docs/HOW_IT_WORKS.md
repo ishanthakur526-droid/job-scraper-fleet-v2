@@ -68,4 +68,4 @@ Weekly, the **company scout** asks Claude to search the web for employers hiring
 
 ## 8. History and outputs
 
-History lives in `outputs/state/jobfleet.sqlite`. A job is *new* the first time it is listed; it is marked gone only when its company was read successfully today and the job was missing. Then the dashboard, CSVs, the daily summary, a source-health report and a few link checks (one or two links per platform are opened to catch broken link formats) are written.
+History lives in `outputs/state/jobfleet.sqlite`. A job is *new* the first time it is listed; it is marked gone only when its company was read successfully today and the job was missing. Then the dashboard, the CSVs (`<family>.csv` with every current match, `<family>_new.csv`, and `job_history.csv`, the running log of every job ever listed), the daily summary, a source-health report and a few link checks (one or two links per platform are opened to catch broken link formats) are written.

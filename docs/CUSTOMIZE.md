@@ -76,7 +76,7 @@ Each `[[role_family]]` block is one kind of job with its own dashboard tab and C
 
 ```toml
 [[role_family]]
-id     = "data_engineering"            # short name, used for file names (optional)
+id     = "data_engineering"            # short name for file names: data_engineering.csv, data_engineering_new.csv (optional)
 name   = "Data Engineering"             # shown on the dashboard
 titles = ["Data Engineer", "Analytics Engineer", "ETL Developer"]
 title_keywords = ["etl", "data pipeline"]          # optional: weaker match on these title words

@@ -148,7 +148,7 @@ def run_triage(
     else:
         status = "no new borderline jobs to judge"
     promoted, demoted, annotated, audit = _apply(buckets, candidates, state, cfg)
-    write_csv(output_dir / "audit" / "claude_triage_today.csv", MAIN_COLUMNS + ["Category", "Claude Action", "Claude Reason", "Claude Confidence"], audit)
+    write_csv(output_dir / "audit" / "claude_review.csv", MAIN_COLUMNS + ["Category", "Claude Action", "Claude Reason", "Claude Confidence"], audit)
     return f"{status}; applied: {promoted} promoted, {demoted} demoted, {annotated} annotated"
 
 

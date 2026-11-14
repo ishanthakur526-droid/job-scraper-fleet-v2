@@ -1,5 +1,28 @@
 # Changelog
 
+## 4.1.0 - 2026-11-14
+
+### Changed
+
+- **Clearer output file names.** Files are named after what they hold and grouped by role family. The old names ended in `_today`, which read like "posted today" although the main list holds every job that matches right now.
+
+  | Before | Now |
+  | --- | --- |
+  | `<family>_jobs_today.csv` | `<family>.csv`: every job that matches now, refreshed each run |
+  | `new_only_<family>_jobs_today.csv` | `<family>_new.csv`: jobs that appeared since the previous run |
+  | `adjacent_roles_today.csv`, `aggregator_review_today.csv` | `related_roles.csv`, `job_board_finds.csv` (as the dashboard tabs) |
+  | `quality_tiers/possible_match_*.csv` | `worth_a_look/<family>.csv` |
+  | `quality_tiers/high_confidence_*`, `needs_review_*` | removed (the `Tier` column has this) |
+  | `audit_<family>...csv`, `audit/rejected_jobs_today.csv`, `audit/claude_triage_today.csv` | `audit/<family>.csv`, `audit/rejected_jobs.csv`, `audit/claude_review.csv` |
+  | `overflow/overflow_<family>...csv` | `overflow/<family>.csv` |
+
+- When a CSV is open in Excel, the fallback file is now `<name>_copy.csv` (was `<name>_new.csv`, which would clash with `<family>_new.csv`).
+- A family's `output` setting in profile.toml still overrides its main file name.
+
+### Added
+
+- **`job_history.csv`**: the running log in the outputs folder: every job ever listed, first and last seen, and whether it is still open (newest first). The internal copy in `outputs/state/` is unchanged.
+
 ## 4.0.1 - 2026-11-14
 
 ### Fixed

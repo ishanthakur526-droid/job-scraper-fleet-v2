@@ -100,10 +100,12 @@ After each run, `outputs/` holds:
 | File | What it is |
 | --- | --- |
 | **`dashboard.html`** | **Start here.** All lists on one page: a tab per job family, *New today*, *Worth a look* (borderline matches), *Sources* (what was checked). Search, filter by company or confidence, sort, light/dark. Works offline. |
-| `<family>_jobs_today.csv` | Each family's list for Excel / Google Sheets: company, title, experience, link, notes, location, posted date, first seen, confidence. |
-| `new_only_<family>_jobs_today.csv` | Only the jobs first seen today. |
-| `reports/daily_summary_latest.md` | Counts, any sources that failed, and today's new jobs with links. |
-| `overflow/`, `quality_tiers/`, `audit/` | Everything else, so nothing is silently dropped: jobs beyond the per-list caps, borderline matches, and every rejected job with the reason. |
+| `<family>.csv` | Every job in that family that matches **right now**, for Excel / Google Sheets: company, title, experience, link, notes, location, posted date, first seen, confidence. Refreshed on every run (closed jobs drop off). One file per family, named after its `id`, e.g. `software_engineering.csv`. |
+| `<family>_new.csv` | Only the jobs that appeared since the previous run. |
+| `job_history.csv` | The running log: every job ever listed, when it was first and last seen, and whether it is still open. |
+| `related_roles.csv`, `job_board_finds.csv` | The *Related roles* and *Job-board finds* tabs as files (only if your profile has them). |
+| `reports/daily_summary_latest.md` | Counts, any sources that failed, and the new jobs with links. |
+| `overflow/`, `worth_a_look/`, `audit/` | Everything else, so nothing is silently dropped: matches beyond the per-list caps, borderline matches, and every rejected job with the reason (`audit/rejected_jobs.csv`). |
 
 Each job is labelled **High confidence** (clear title match plus evidence) or **Needs review** (for example a "Senior Analyst" title kept because the posting asks for only 2 years). Lists hold the best 40 per family, at most 8 per company; the rest go to `overflow/`.
 

@@ -192,7 +192,7 @@ def profile_from_dict(data: dict[str, Any]) -> Profile:
         problems.append(f"Two role families share the id '{dup}'. Give each a different id.")
     adjacent = None
     if isinstance(data.get("adjacent"), dict) and data["adjacent"].get("titles"):
-        adjacent = _family({"id": "adjacent", "name": "Adjacent roles (review)", "output": "adjacent_roles_today.csv", **data["adjacent"]}, -1, problems, route="adjacent")
+        adjacent = _family({"id": "adjacent", "name": "Related roles", "output": "related_roles.csv", **data["adjacent"]}, -1, problems, route="adjacent")
 
     overrides = dict(advanced.get("levels") or {})
     for lvl in advanced.get("exclude_levels") or []:
@@ -335,7 +335,7 @@ def _family(item: Any, index: int, problems: list[str], route: str = "main") -> 
     return Category(
         id=family_id,
         name=name or family_id,
-        output=str(item.get("output") or f"{family_id}_jobs_today.csv"),
+        output=str(item.get("output") or f"{family_id}.csv"),  # every job that matches now; see exporters.py
         target_roles=list(titles),
         positive_keywords=[str(k) for k in item.get("keywords") or []],
         negative_keywords=[str(k) for k in item.get("exclude_title_words") or []],

@@ -7,10 +7,10 @@ Yes. JobFleet is open source (MIT), uses free public job feeds, and runs on your
 No. On Windows: double-click `Setup.bat`, answer six questions, double-click `Run.bat`. Or use [cloud mode](CLOUD.md) and only fill in a form on GitHub.
 
 **Why do I get few results?**
-Usually one of three things: the companies in the list do not hire much in your field or country (add yours to `my_companies.txt`); your level excludes most titles (for example most marketing postings are titled "Marketing *Manager*", which an early-career profile drops); or your experience range is narrow. The dashboard's *Worth a look* tab and `outputs/audit/rejected_jobs_today.csv`, which lists every rejected job with the reason, show what was left out and why.
+Usually one of three things: the companies in the list do not hire much in your field or country (add yours to `my_companies.txt`); your level excludes most titles (for example most marketing postings are titled "Marketing *Manager*", which an early-career profile drops); or your experience range is narrow. The dashboard's *Worth a look* tab and `outputs/audit/rejected_jobs.csv`, which lists every rejected job with the reason, show what was left out and why.
 
 **Why was a job I expected missing?**
-Search for it in `outputs/audit/rejected_jobs_today.csv`. The `Reason` column says why: for example `excluded_seniority:lead`, `outside_your_countries`, `experience_too_high` or `weak_role_match` (title not close enough to your titles; add it to `titles`).
+Search for it in `outputs/audit/rejected_jobs.csv`. The `Reason` column says why: for example `excluded_seniority:lead`, `outside_your_countries`, `experience_too_high` or `weak_role_match` (title not close enough to your titles; add it to `titles`).
 
 **A job is in the wrong country.**
 Please [open an issue](https://github.com/ishanthakur526-droid/jobfleet/issues) with the exact location text. Location text is wildly inconsistent across sites, and every reported case becomes a test.
