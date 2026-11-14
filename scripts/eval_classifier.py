@@ -21,8 +21,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from jobfleet.classifier import Classifier  # noqa: E402
-from jobfleet.config import load_taxonomy  # noqa: E402
 from jobfleet.pipeline import dedupe_raw  # noqa: E402
+from jobfleet.profile import load_profile  # noqa: E402
 from jobfleet.rawdump import read_dump  # noqa: E402
 
 LABELS = ("data_bi", "research", "excel_mis", "adjacent", "none")
@@ -35,8 +35,7 @@ def predicted(evaluation) -> str:
 
 
 def evaluate(dump: Path):
-    categories, adjacent = load_taxonomy(ROOT / "config")
-    classifier = Classifier(categories, adjacent)
+    classifier = Classifier.from_profile(load_profile(ROOT / "profile.toml"))
     _meta, jobs, _health = read_dump(dump)
     return [classifier.evaluate(job) for job in dedupe_raw(jobs)]
 
@@ -46,7 +45,7 @@ def sample(args) -> None:
     rng = random.Random(7)
     strata: dict[str, list] = defaultdict(list)
     for ev in evaluations:
-        if ev.stage in ("prefilter",) or ev.reason.startswith(("excluded_entry", "non_india")):
+        if ev.stage in ("prefilter",) or ev.reason.startswith(("excluded_entry", "outside_your_countries")):
             continue
         strata["accepted" if ev.decision == "accept" else ev.reason.split(":")[0]].append(ev)
     quota = {"accepted": int(args.n * 0.45), "possible": int(args.n * 0.15)}

@@ -5,10 +5,10 @@ import json
 import os
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote_plus
 
-from .models import Board, Category
+from .models import Board
 
-_CATEGORY_FIELDS = {f.name for f in dataclasses.fields(Category)}
 _BOARD_FIELDS = {f.name for f in dataclasses.fields(Board)}
 
 
@@ -16,33 +16,23 @@ def _read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
-def _category(item: dict[str, Any], route: str = "main") -> Category:
-    data = {key: value for key, value in item.items() if key in _CATEGORY_FIELDS}
-    data.setdefault("route", route)
-    return Category(**data)
-
-
-def load_taxonomy(config_dir: Path) -> tuple[list[Category], Category | None]:
-    data = _read_json(config_dir / "categories.json")
-    categories = [_category(item) for item in data.get("categories", [])]
-    adjacent = _category(data["adjacent"], route="adjacent") if data.get("adjacent") else None
-    return categories, adjacent
-
-
-def load_categories(config_dir: Path) -> list[Category]:
-    return load_taxonomy(config_dir)[0]
-
-
 def _board(item: dict[str, Any]) -> Board:
     return Board(**{key: value for key, value in item.items() if key in _BOARD_FIELDS})
 
 
 def load_boards(config_dir: Path, include_disabled: bool = False) -> tuple[list[Board], list[str]]:
-    data = _read_json(config_dir / "boards.json")
-    boards = [_board(item) for item in data.get("boards", [])]
+    """Companies to check: config/companies.json (v3 name: boards.json) plus scout/discovery finds."""
+    path = config_dir / "companies.json"
+    if not path.exists():
+        path = config_dir / "boards.json"
+    data = _read_json(path)
+    boards = [_board(item) for item in data.get("companies", data.get("boards", []))]
     discovered_path = config_dir / "discovered_boards.json"
     if discovered_path.exists():
         boards.extend(_board(item) for item in _read_json(discovered_path).get("boards", []))
+    from .companies import default_path, load_my_companies
+
+    boards.extend(load_my_companies(default_path(config_dir)))
     boards = dedupe_boards(boards)
     if not include_disabled:
         boards = [board for board in boards if board.enabled]
@@ -76,6 +66,43 @@ def load_discovered_boards(config_dir: Path) -> list[Board]:
     return [_board(item) for item in _read_json(path).get("boards", [])]
 
 
+def expand_boards(boards: list[Board], countries: list[str] | tuple[str, ...], keywords: list[str] | tuple[str, ...]) -> list[Board]:
+    """Fit the company list to a profile.
+
+    - an entry with ``countries`` (e.g. an India-only careers site) is skipped unless the profile looks there
+    - ``{keyword}`` in the token or options becomes one entry per profile search keyword (``max_keywords``, default 3)
+    - ``{country}`` becomes one entry per profile country name (at most 3)
+    """
+    from .geo import country_name
+
+    wanted = {c.upper() for c in countries}
+    names = [country_name(c) for c in countries][:3] or [""]
+    output: list[Board] = []
+    for board in boards:
+        if board.countries and wanted and not wanted & {c.upper() for c in board.countries}:
+            continue
+        variants = [board]
+        if _mentions(board, "{keyword}"):
+            values = list(keywords)[: int(board.options.get("max_keywords", 3))]
+            variants = [_fill(b, "{keyword}", kw, len(values) > 1) for b in variants for kw in values]
+        if _mentions(board, "{country}"):
+            variants = [_fill(b, "{country}", name, len(names) > 1) for b in variants for name in names]
+        output.extend(variants)
+    return dedupe_boards(output)
+
+
+def _mentions(board: Board, placeholder: str) -> bool:
+    return placeholder in board.token or placeholder in json.dumps(board.options)
+
+
+def _fill(board: Board, placeholder: str, value: str, several: bool) -> Board:
+    options = json.loads(json.dumps(board.options).replace(placeholder, json.dumps(value)[1:-1]))
+    token = board.token.replace(placeholder, quote_plus(value) if board.token.startswith("http") else value)
+    if token == board.token and several:  # only the options differ: keep the variants apart (Board.key)
+        options["variant"] = "|".join(filter(None, [str(options.get("variant", "")), value]))
+    return dataclasses.replace(board, token=token, options=options)
+
+
 def dedupe_boards(boards: list[Board]) -> list[Board]:
     seen: set[str] = set()
     output: list[Board] = []
@@ -85,32 +112,3 @@ def dedupe_boards(boards: list[Board]) -> list[Board]:
         seen.add(board.key)
         output.append(board)
     return output
-
-
-DEFAULT_LLM_CONFIG: dict[str, Any] = {
-    "enabled": True,
-    "claude_exe": "",
-    "model": "sonnet",
-    "effort": "low",
-    "scout": {"enabled": True, "every_days": 7, "timeout_s": 900, "model": "sonnet", "effort": "medium"},
-    "triage": {
-        "enabled": True,
-        "max_items": 60,
-        "timeout_s": 240,
-        "promote_confidence": 0.75,
-        "demote_confidence": 0.85,
-    },
-}
-
-
-def load_llm_config(config_dir: Path) -> dict[str, Any]:
-    config = json.loads(json.dumps(DEFAULT_LLM_CONFIG))
-    path = config_dir / "llm.json"
-    if path.exists():
-        user = _read_json(path)
-        for key, value in user.items():
-            if isinstance(value, dict) and isinstance(config.get(key), dict):
-                config[key].update(value)
-            else:
-                config[key] = value
-    return config

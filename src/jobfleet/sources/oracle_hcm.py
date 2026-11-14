@@ -1,6 +1,7 @@
 """Oracle Recruiting Cloud (HCM) candidate-experience REST API (e.g. JPMorgan Chase).
 
-Token: ``host|siteNumber``. Options: ``keywords`` (list), ``location`` (default India).
+Token: ``host|siteNumber``. Options: ``keywords`` (list, default: the profile's search keywords),
+``location`` (default: each of the profile's countries).
 The ``finder=`` value is built by hand: its ';' and ',' separators must stay unencoded.
 """
 
@@ -8,6 +9,7 @@ from __future__ import annotations
 
 from urllib.parse import quote
 
+from ..geo import country_name
 from ..http import FetchError
 from ..models import Board, RawJob
 from ..text import clean_html, normalize_space
@@ -21,12 +23,12 @@ class OracleHcmAdapter(SourceAdapter):
 
     def list_jobs(self, board: Board) -> list[RawJob]:
         host, site = board.token.split("|", 1)
-        keywords = list(board.options.get("keywords") or ["analyst"])
-        location = str(board.options.get("location", "India"))
+        keywords = list(board.options.get("keywords") or self.ctx.keywords[:2])
+        locations = [str(board.options["location"])] if board.options.get("location") else [country_name(c) for c in self.ctx.countries] or [""]
         cap = int(board.options.get("max_jobs", 200))
         jobs: list[RawJob] = []
         seen: set[str] = set()
-        for keyword in keywords:
+        for location, keyword in ((loc, k) for loc in locations for k in keywords):
             offset = 0
             while offset < cap and self.time_left():
                 finder = (

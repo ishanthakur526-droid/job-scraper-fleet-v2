@@ -1,0 +1,122 @@
+# Cloud mode: GitHub runs JobFleet on weekdays and publishes the dashboard with GitHub Pages.
+# Needs: profile.toml in the repository (Actions -> "Set up my profile" writes it) and
+# Settings -> Pages -> Source: "GitHub Actions". Claude features are off here (no login in the cloud).
+name: Find jobs
+
+on:
+  schedule:
+    - cron: "30 10 * * 1-5"   # 10:30 UTC on weekdays (16:00 in India, 06:30 in New York)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: find-jobs
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for a profile
+        id: profile
+        env:
+          DEMO_REPO: ${{ github.repository == 'ishanthakur526-droid/jobfleet' }}
+        run: |
+          # A copy made with "Use this template" still holds the author's profile until you fill in the form.
+          if [ -f profile.toml ] && { [ "$DEMO_REPO" = "true" ] || ! grep -q '^name = .*(Ishan)' profile.toml; }; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "### Set up your profile first" >> "$GITHUB_STEP_SUMMARY"
+            echo "Run **Actions → Set up my profile → Run workflow** and fill in the form." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.profile.outputs.ok == 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install JobFleet
+        if: steps.profile.outputs.ok == 'true'
+        run: python -m pip install --quiet -e .
+
+      - name: Restore job history (so "new today" works)
+        if: steps.profile.outputs.ok == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            outputs/state
+            samples/*/state
+          key: jobfleet-state-${{ github.run_id }}
+          restore-keys: jobfleet-state-
+
+      - name: Find jobs
+        if: steps.profile.outputs.ok == 'true'
+        env:
+          JOBFLEET_DISABLE_LLM: "1"
+          PYTHONUTF8: "1"
+        run: python -m jobfleet run --skip-llm --no-dump-raw --output-dir outputs
+
+      # The project's own repository also publishes the example profiles as a live demo.
+      - name: Example dashboards (demo repository only)
+        if: steps.profile.outputs.ok == 'true' && github.repository == 'ishanthakur526-droid/jobfleet'
+        env:
+          JOBFLEET_DISABLE_LLM: "1"
+          PYTHONUTF8: "1"
+        run: |
+          for preset in us-software-engineer-mid uk-marketing-early-career; do
+            python -m jobfleet run --skip-llm --no-dump-raw --profile "profiles/$preset.toml" --output-dir "samples/$preset" || echo "::warning::$preset run failed"
+          done
+
+      - name: Save job history
+        if: always() && steps.profile.outputs.ok == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            outputs/state
+            samples/*/state
+          key: jobfleet-state-${{ github.run_id }}
+
+      - name: Build the site
+        if: steps.profile.outputs.ok == 'true'
+        run: python scripts/make_site.py site outputs samples
+
+      - name: Keep the CSV files
+        if: steps.profile.outputs.ok == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: jobfleet-results
+          path: |
+            outputs/*.csv
+            outputs/dashboard.html
+            outputs/reports/
+            outputs/health/
+          retention-days: 14
+
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.profile.outputs.ok == 'true'
+        with:
+          path: site
+
+    outputs:
+      ok: ${{ steps.profile.outputs.ok }}
+
+  publish:
+    needs: run
+    if: needs.run.outputs.ok == 'true'
+    runs-on: ubuntu-latest
+    continue-on-error: true   # Pages not switched on yet: results are still in the artifact
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

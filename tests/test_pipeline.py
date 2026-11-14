@@ -4,19 +4,18 @@ import pytest
 
 from jobfleet import pipeline as pipeline_module
 from jobfleet.classifier import Classifier
-from jobfleet.config import load_taxonomy
 from jobfleet.http import FetchError
 from jobfleet.models import Board, RawJob
 from jobfleet.pipeline import JobPipeline, dedupe_raw
+from jobfleet.profile import load_profile
 
-CONFIG = Path(__file__).resolve().parents[1] / "config"
+PROFILE = Path(__file__).resolve().parents[1] / "profile.toml"
 DESC = "Bengaluru. SQL dashboards, Excel reporting, analytics insights. 1-3 years of experience."
 
 
 @pytest.fixture(scope="module")
 def classifier():
-    categories, adjacent = load_taxonomy(CONFIG)
-    return Classifier(categories, adjacent)
+    return Classifier.from_profile(load_profile(PROFILE))
 
 
 def raw(title, company="Acme", url=None, source="lever", location="Bengaluru, India", key="", **kw):

@@ -95,7 +95,7 @@ def _parse_anchor_listing(board: Board, html: str, page_url: str, href_pattern: 
             location = first_location(following.get_text(" ", strip=True) if following else "")
         flags: dict[str, Any] = {}
         if not location and india_page:
-            flags["geo_hint"] = "india"  # listing page filtered to India but row shows no place
+            flags["geo_hint"] = "target"  # listing page filtered to the country but row shows no place
         jobs.append(
             RawJob(
                 company=board.company,
@@ -113,12 +113,12 @@ def _parse_anchor_listing(board: Board, html: str, page_url: str, href_pattern: 
 
 
 def first_location(text: str) -> str:
-    """First India location in a listing row, else the first foreign one, else ''."""
+    """First target-country location in a listing row, else the first foreign one, else ''."""
     foreign = ""
     for chunk in re.split(r"\s{2,}| \| |\n|Save Saved|Apply filters", normalize_space(text)):
         for segment in split_segments(chunk):
             status = classify_segment(segment)[0]
-            if status == "india":
+            if status == "target":
                 return segment.strip(" -|")
             if status == "foreign" and not foreign:
                 foreign = segment.strip(" -|")

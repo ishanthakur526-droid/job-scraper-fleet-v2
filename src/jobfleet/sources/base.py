@@ -18,6 +18,9 @@ class AdapterContext:
     prefilter: Prefilter | None = None
     budget_s: float = 120.0
     options: dict[str, Any] = field(default_factory=dict)
+    countries: tuple[str, ...] = ("IN",)  # ISO2 codes from the profile; empty = anywhere
+    keywords: tuple[str, ...] = ("analyst",)  # search words for boards that need a query
+    level: str = "early_career"  # profile seniority preset (LinkedIn's experience filter)
 
 
 class SourceAdapter:

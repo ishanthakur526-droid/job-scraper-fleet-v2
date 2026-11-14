@@ -3,17 +3,16 @@ from pathlib import Path
 import pytest
 
 from jobfleet.classifier import Classifier
-from jobfleet.config import load_taxonomy
 from jobfleet.models import RawJob
+from jobfleet.profile import load_profile
 from jobfleet.text import keyword_hits
 
-CONFIG = Path(__file__).resolve().parents[1] / "config"
+PROFILE = Path(__file__).resolve().parents[1] / "profile.toml"
 
 
 @pytest.fixture(scope="module")
 def classifier():
-    categories, adjacent = load_taxonomy(CONFIG)
-    return Classifier(categories, adjacent)
+    return Classifier.from_profile(load_profile(PROFILE))
 
 
 def job(title, description="Bengaluru role. Build SQL dashboards and Excel reporting for analytics insights.", location="Bengaluru, India", **kw):
@@ -120,11 +119,11 @@ def test_adjacent_and_aggregator_routes(classifier):
 
 def test_indiana_job_is_rejected_as_non_india(classifier):
     result = classifier.evaluate(job("Data Analyst", location="Indianapolis, Indiana"))
-    assert result.decision == "reject" and result.reason == "non_india"
+    assert result.decision == "reject" and result.reason == "outside_your_countries"
 
 
 def test_unknown_location_rejected_unless_inferred(classifier):
-    assert classifier.evaluate(job("Data Analyst", "SQL dashboards.", location="2 Locations")).reason == "geo_unknown"
+    assert classifier.evaluate(job("Data Analyst", "SQL dashboards.", location="2 Locations")).reason == "location_unknown"
     inferred = classifier.evaluate(job("Data Analyst", "This role is based in Pune, India. SQL dashboards and reporting.", location="Remote"))
     assert inferred.decision == "accept" and "inferred_location" in inferred.review_flags
 

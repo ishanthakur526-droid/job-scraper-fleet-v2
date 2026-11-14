@@ -30,6 +30,7 @@ class Category:
     excluded_title_patterns: list[str] = field(default_factory=list)
     title_keywords: list[str] = field(default_factory=list)
     route: str = "main"
+    domains: list[str] = field(default_factory=list)  # job domains this family owns (e.g. "engineering")
 
 
 @dataclass(frozen=True)
@@ -42,10 +43,12 @@ class Board:
     aggregator: bool = False
     options: dict = field(default_factory=dict)
     note: str = ""
+    countries: list[str] = field(default_factory=list)  # ISO2 codes a country-specific careers site serves
 
     @property
     def key(self) -> str:
-        return f"{self.source}|{self.token}".lower()
+        variant = self.options.get("variant") if isinstance(self.options, dict) else None
+        return f"{self.source}|{self.token}{'|' + str(variant) if variant else ''}".lower()
 
 
 @dataclass

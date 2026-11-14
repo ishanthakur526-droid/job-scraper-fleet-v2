@@ -1,0 +1,18 @@
+name: Something does not work
+description: Setup, a run, the dashboard or cloud mode fails.
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: where
+    attributes: { label: Where, options: ["Windows (Setup.bat / Run.bat)", "macOS / Linux", "Cloud mode (GitHub Actions)", "Other"] }
+    validations: { required: true }
+  - type: textarea
+    id: what
+    attributes: { label: What happened, description: "Steps, and the error message if there is one." }
+    validations: { required: true }
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `jobfleet doctor`
+      description: Run it in the JobFleet folder and paste the result (it contains no passwords).
+      render: text

@@ -136,17 +136,23 @@ def test_ashby_and_greenhouse_structured_locations():
     assert gh.locations == ["Pune, Maharashtra, India"] and gh.description == "SQL" and gh.posted_date == "2026-11-12"
 
 
-def test_capgemini_skips_rows_without_job_specific_link():
-    url = "https://cg-jobstream-api.azurewebsites.net/api/job-search?page=1&size=50&country_code=in-en&search=analyst"
+def test_capgemini_links_use_the_country_job_page():
+    # 2026-11-14: the feed's apply_job_url (careers.capgemini.com/job/...) returned 404 for every country.
+    url = "https://cg-jobstream-api.azurewebsites.net/api/job-search?page=1&size=50&country_code={site}&search=analyst"
     http = FakeHttp(json_data={
-        url: {"data": [
-            {"id": "a", "title": "Business Analyst", "location": "Pune", "apply_job_url": "https://careers.capgemini.com/job/a"},
-            {"id": "b", "title": "Data Analyst", "location": "Pune"},
+        url.format(site="in-en"): {"data": [
+            {"id": "427805-en_GB_SAPBTP", "title": "Business Analyst", "location": "Pune", "apply_job_url": "https://careers.capgemini.com/job/a/1/"},
+            {"id": "", "title": "No id", "location": "Pune"},
         ]},
-        url.replace("page=1", "page=2"): {"data": []},
+        url.format(site="in-en").replace("page=1", "page=2"): {"data": []},
+        url.format(site="us-en"): {"data": [{"id": "9-en_US_SAPBTP", "title": "Data Analyst", "location": "Atlanta"}]},
+        url.format(site="us-en").replace("page=1", "page=2"): {"data": []},
     })
-    jobs = adapter_for("capgemini", http).list_jobs(Board("Capgemini", "capgemini", "analyst"))
-    assert [j.source_id for j in jobs] == ["a"]
+    india = adapter_for("capgemini", http).list_jobs(Board("Capgemini", "capgemini", "analyst"))
+    assert [j.url for j in india] == ["https://www.capgemini.com/in-en/jobs/427805-en_GB_SAPBTP/"]
+    assert india[0].legacy_keys == ["https://careers.capgemini.com/job/a/1"] and india[0].key() == "capgemini:427805-en_gb_sapbtp"
+    us = adapter_for("capgemini", http, AdapterContext(countries=("US", "BR"))).list_jobs(Board("Capgemini", "capgemini", "analyst"))
+    assert [j.url for j in us] == ["https://www.capgemini.com/us-en/jobs/9-en_US_SAPBTP/"]
 
 
 def test_deloitte_listing_no_longer_fakes_india_in_description():
@@ -159,7 +165,7 @@ def test_deloitte_listing_no_longer_fakes_india_in_description():
     })
     jobs = adapter_for("paginated_html", http).list_jobs(Board("Deloitte", "paginated_html", token))
     assert "India" not in jobs[0].description
-    assert jobs[0].flags.get("geo_hint") == "india" and jobs[0].location == ""
+    assert jobs[0].flags.get("geo_hint") == "target" and jobs[0].location == ""
     assert resolve(jobs[1].location).status == "foreign"  # Indianapolis row is not hinted as India
     assert "geo_hint" not in jobs[1].flags
 

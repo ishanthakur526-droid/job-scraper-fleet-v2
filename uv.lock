@@ -197,8 +197,8 @@ wheels = [
 ]
 
 [[package]]
-name = "job-scraper-fleet"
-version = "3.0.1"
+name = "jobfleet"
+version = "4.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },

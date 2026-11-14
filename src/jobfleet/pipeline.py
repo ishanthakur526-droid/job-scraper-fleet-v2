@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from urllib.parse import urlparse
 
 from .classifier import Classifier, Evaluation
-from .geo import classify_segment, first_india_segment, primary_india_city
+from .geo import classify_segment, first_target_segment, primary_city
 from .http import FetchError, HttpClient
 from .models import Board, BoardHealth, JobResult, RawJob, RejectedJob, legacy_url_key
 from .sources import AdapterContext, adapter_for, board_from_url
@@ -65,8 +65,12 @@ class JobPipeline:
         max_per_category: int = 40,
         per_company_cap: int = 8,
         max_possible_per_category: int = 50,
+        countries: tuple[str, ...] = ("IN",),
+        keywords: tuple[str, ...] = ("analyst",),
+        level: str = "early_career",
     ):
         self.http = http
+        self.countries, self.keywords, self.level = tuple(countries), tuple(keywords), level
         self.classifier = classifier
         self.workers = max(1, workers)
         self.board_budget_s = board_budget_s
@@ -97,7 +101,9 @@ class JobPipeline:
 
     def _collect_board(self, board: Board) -> tuple[list[RawJob], BoardHealth]:
         started = time.monotonic()
-        context = AdapterContext(prefilter=self.classifier.prefilter, budget_s=self.board_budget_s)
+        context = AdapterContext(
+            prefilter=self.classifier.prefilter, budget_s=self.board_budget_s, countries=self.countries, keywords=self.keywords, level=self.level
+        )
         try:
             adapter = adapter_for(board.source, self.http, context)
             jobs = [job for job in adapter.list_jobs(board) if job.title and job.url]
@@ -210,10 +216,10 @@ def dedupe_raw(jobs: list[RawJob]) -> list[RawJob]:
 def to_result(ev: Evaluation) -> JobResult:
     job = ev.job
     location = job.location or "; ".join(job.locations[:3])
-    if job.location and job.locations and classify_segment(job.location)[0] != "india":
-        india = first_india_segment(job.locations)  # multi-location job: show the Indian office first
-        if india:
-            location = f"{india} (also {job.location})"
+    if job.location and job.locations and classify_segment(job.location)[0] != "target":
+        wanted = first_target_segment(job.locations)  # multi-location job: show the office in your country first
+        if wanted:
+            location = f"{wanted} (also {job.location})"
     snippet_source = job.requirements_text or job.description
     return JobResult(
         company=job.company,
@@ -268,7 +274,7 @@ def company_norm(company: str) -> str:
 
 
 def fingerprint(result: JobResult) -> tuple[str, str, str]:
-    return (company_norm(result.company), normalize_title(result.title).text, primary_india_city([result.location]))
+    return (company_norm(result.company), normalize_title(result.title).text, primary_city([result.location]))
 
 
 def group_duplicates(results: list[JobResult]) -> list[JobResult]:

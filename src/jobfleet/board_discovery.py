@@ -2,7 +2,7 @@
 
 Candidates come from the weekly Claude company scout (or an optional manual
 web-search pass). A board is promoted to ``config/discovered_boards.json`` only
-if it returns live jobs, some in India, and at least one that the production
+if it returns live jobs, some in the profile's countries, and at least one that the production
 classifier accepts. Rejections are cached for 30 days so the same dead
 candidates are not re-probed every run (v2 re-probed ~100 failures daily).
 """
@@ -22,6 +22,7 @@ from .config import dedupe_boards, load_discovered_boards, write_discovered_boar
 from .discovery import discover_urls
 from .exporters import write_csv
 from .geo import resolve
+from .geo import targets as geo_targets
 from .http import FetchError, HttpClient
 from .models import Board
 from .sources import AdapterContext, adapter_for, board_from_url
@@ -41,14 +42,14 @@ class DiscoveryResult:
 
 
 def verify_board(http: HttpClient, board: Board, classifier: Classifier, budget_s: float = 90.0) -> dict[str, Any]:
-    context = AdapterContext(prefilter=classifier.prefilter, budget_s=budget_s)
+    context = AdapterContext(prefilter=classifier.prefilter, budget_s=budget_s, countries=tuple(sorted(geo_targets())))
     try:
         jobs = adapter_for(board.source, http, context).list_jobs(board)
     except (FetchError, ValueError) as exc:
         return {"status": "failed", "error": str(exc)[:300], "jobs_found": 0, "india_jobs": 0, "accepted_jobs": 0, "priority_categories": ""}
     except Exception as exc:  # unexpected payloads must not break the run
         return {"status": "failed", "error": f"{type(exc).__name__}: {exc}"[:300], "jobs_found": 0, "india_jobs": 0, "accepted_jobs": 0, "priority_categories": ""}
-    india = [job for job in jobs if resolve(job.location, job.country_codes, job.locations, job.description).is_india]
+    india = [job for job in jobs if resolve(job.location, job.country_codes, job.locations, job.description).is_target]
     hits: Counter[str] = Counter()
     for job in india:
         evaluation = classifier.evaluate(job)
@@ -57,7 +58,7 @@ def verify_board(http: HttpClient, board: Board, classifier: Classifier, budget_
     if not jobs:
         status = "rejected_no_jobs"
     elif not india:
-        status = "rejected_no_india_jobs"
+        status = "rejected_no_jobs_in_your_countries"
     elif not hits:
         status = "rejected_no_category_match"
     else:

@@ -1,13 +1,15 @@
 """Eightfold-powered career sites (``/api/pcsx``), e.g. Microsoft.
 
 Token: ``host|domain`` (``apply.careers.microsoft.com|microsoft.com``).
-Options: ``queries`` (list of search strings), ``location`` (default India).
+Options: ``queries`` (list of search strings, default: the profile's search keywords),
+``location`` (default: each of the profile's countries).
 """
 
 from __future__ import annotations
 
 from urllib.parse import urlencode
 
+from ..geo import country_name
 from ..http import FetchError
 from ..models import Board, RawJob
 from ..text import clean_html, normalize_space
@@ -21,12 +23,12 @@ class EightfoldAdapter(SourceAdapter):
 
     def list_jobs(self, board: Board) -> list[RawJob]:
         host, domain = board.token.split("|", 1)
-        queries = list(board.options.get("queries") or ["data analyst", "business analyst", "research analyst"])
-        location = str(board.options.get("location", "India"))
+        queries = list(board.options.get("queries") or self.ctx.keywords)
+        locations = [str(board.options["location"])] if board.options.get("location") else [country_name(c) for c in self.ctx.countries] or [""]
         pages = int(board.options.get("pages", 2))
         jobs: list[RawJob] = []
         seen: set[str] = set()
-        for query in queries:
+        for location, query in ((loc, q) for loc in locations for q in queries):
             for page in range(pages):
                 if not self.time_left():
                     return jobs

@@ -1,0 +1,457 @@
+{
+  "about": "Companies JobFleet checks. Add one by pasting its careers-page link into my_companies.txt (easiest), or add an entry here. {keyword} is replaced by the search keywords in profile.toml and {country} by its countries; 'countries' limits an entry to those countries (ISO codes).",
+  "companies": [
+    {
+      "company": "HighLevel",
+      "source": "lever",
+      "token": "gohighlevel"
+    },
+    {
+      "company": "Hevo Data",
+      "source": "lever",
+      "token": "hevodata"
+    },
+    {
+      "company": "Aera Technology",
+      "source": "lever",
+      "token": "aeratechnology"
+    },
+    {
+      "company": "Coupa",
+      "source": "lever",
+      "token": "coupa"
+    },
+    {
+      "company": "Wayground",
+      "source": "lever",
+      "token": "Wayground"
+    },
+    {
+      "company": "Dozee",
+      "source": "lever",
+      "token": "dozee"
+    },
+    {
+      "company": "Fam",
+      "source": "lever",
+      "token": "fampay"
+    },
+    {
+      "company": "Wahed",
+      "source": "lever",
+      "token": "wahed.com"
+    },
+    {
+      "company": "Resilinc",
+      "source": "lever",
+      "token": "resilinc"
+    },
+    {
+      "company": "Tala",
+      "source": "lever",
+      "token": "tala"
+    },
+    {
+      "company": "Jobgether",
+      "source": "lever",
+      "token": "jobgether",
+      "aggregator": true,
+      "note": "Remote-jobs aggregator: matches go to aggregator_review_today.csv",
+      "options": {
+        "params": {
+          "location": "{country}"
+        },
+        "timeout": 60
+      }
+    },
+    {
+      "company": "Dun & Bradstreet",
+      "source": "lever",
+      "token": "dnb"
+    },
+    {
+      "company": "Lightcast",
+      "source": "lever",
+      "token": "economicmodeling"
+    },
+    {
+      "company": "Brillio",
+      "source": "lever",
+      "token": "brillio-2"
+    },
+    {
+      "company": "AlphaSense",
+      "source": "greenhouse",
+      "token": "alphasense"
+    },
+    {
+      "company": "Fractal Analytics",
+      "source": "workday",
+      "token": "fractal.wd1.myworkdayjobs.com|fractal|Careers"
+    },
+    {
+      "company": "Forrester",
+      "source": "workday",
+      "token": "forrester.wd501.myworkdayjobs.com|forrester|careers"
+    },
+    {
+      "company": "Accenture",
+      "source": "accenture",
+      "token": "{keyword}"
+    },
+    {
+      "company": "Amazon",
+      "source": "amazon_jobs",
+      "token": "{keyword}"
+    },
+    {
+      "company": "Capgemini",
+      "source": "capgemini",
+      "token": "{keyword}"
+    },
+    {
+      "company": "Cognizant",
+      "source": "paginated_html",
+      "token": "https://careers.cognizant.com/india-en/jobs/?keyword={keyword}&location=Chennai&page={page}",
+      "countries": [
+        "IN"
+      ],
+      "options": {
+        "max_keywords": 1
+      }
+    },
+    {
+      "company": "Cognizant",
+      "source": "paginated_html",
+      "token": "https://careers.cognizant.com/india-en/jobs/?keyword={keyword}&location=Hyderabad&page={page}",
+      "countries": [
+        "IN"
+      ],
+      "options": {
+        "max_keywords": 1
+      }
+    },
+    {
+      "company": "Deloitte",
+      "source": "paginated_html",
+      "token": "https://apply.deloitte.com/en_US/careers/SearchJobs/India/?jobRecordsPerPage=10&jobOffset={offset}",
+      "countries": [
+        "IN"
+      ]
+    },
+    {
+      "company": "EY",
+      "source": "successfactors",
+      "token": "https://careers.ey.com/ey/search/?q={keyword}&locationsearch={country}",
+      "options": {
+        "max_keywords": 2
+      }
+    },
+    {
+      "company": "Gartner",
+      "source": "workday",
+      "token": "gartner.wd5.myworkdayjobs.com|gartner|EXT"
+    },
+    {
+      "company": "Kantar",
+      "source": "workday",
+      "token": "kantar.wd3.myworkdayjobs.com|kantar|KANTAR"
+    },
+    {
+      "company": "Nielsen",
+      "source": "smartrecruiters",
+      "token": "TheNielsenCompany"
+    },
+    {
+      "company": "NielsenIQ",
+      "source": "smartrecruiters",
+      "token": "nielseniq"
+    },
+    {
+      "company": "PwC",
+      "source": "workday",
+      "token": "pwc.wd3.myworkdayjobs.com|pwc|Global_Experienced_Careers"
+    },
+    {
+      "company": "Salesforce",
+      "source": "workday",
+      "token": "salesforce.wd12.myworkdayjobs.com|salesforce|External_Career_Site"
+    },
+    {
+      "company": "Thomson Reuters",
+      "source": "workday",
+      "token": "thomsonreuters.wd5.myworkdayjobs.com|thomsonreuters|External_Career_Site"
+    },
+    {
+      "company": "TCS",
+      "source": "tcs_ibegin",
+      "token": "{keyword}",
+      "options": {
+        "pages": 3,
+        "max_keywords": 2
+      },
+      "countries": [
+        "IN"
+      ]
+    },
+    {
+      "company": "Findem",
+      "source": "lever",
+      "token": "findem"
+    },
+    {
+      "company": "Groww",
+      "source": "greenhouse",
+      "token": "groww"
+    },
+    {
+      "company": "Janes",
+      "source": "greenhouse",
+      "token": "janes"
+    },
+    {
+      "company": "Flagright",
+      "source": "ashby",
+      "token": "flagright.com"
+    },
+    {
+      "company": "Mem0",
+      "source": "ashby",
+      "token": "mem0"
+    },
+    {
+      "company": "Parker",
+      "source": "ashby",
+      "token": "parker"
+    },
+    {
+      "company": "Commure",
+      "source": "ashby",
+      "token": "Commure"
+    },
+    {
+      "company": "Riveron",
+      "source": "ashby",
+      "token": "riveron"
+    },
+    {
+      "company": "Pave Bank",
+      "source": "ashby",
+      "token": "PaveBank"
+    },
+    {
+      "company": "Bullpen Talent",
+      "source": "ashby",
+      "token": "bullpen-talent"
+    },
+    {
+      "company": "OpenGov",
+      "source": "ashby",
+      "token": "opengov"
+    },
+    {
+      "company": "HackerOne",
+      "source": "ashby",
+      "token": "hackerone"
+    },
+    {
+      "company": "Allica Bank",
+      "source": "ashby",
+      "token": "allica-bank"
+    },
+    {
+      "company": "Paytm",
+      "source": "lever",
+      "token": "paytm"
+    },
+    {
+      "company": "Meesho",
+      "source": "lever",
+      "token": "meesho"
+    },
+    {
+      "company": "Nium",
+      "source": "lever",
+      "token": "nium"
+    },
+    {
+      "company": "Saviynt",
+      "source": "lever",
+      "token": "saviynt"
+    },
+    {
+      "company": "Aspora",
+      "source": "ashby",
+      "token": "Aspora"
+    },
+    {
+      "company": "Model N",
+      "source": "lever",
+      "token": "modeln"
+    },
+    {
+      "company": "Razorpay",
+      "source": "greenhouse",
+      "token": "razorpaysoftwareprivatelimited"
+    },
+    {
+      "company": "WPP Media",
+      "source": "greenhouse",
+      "token": "wpp"
+    },
+    {
+      "company": "WNS Global Services",
+      "source": "smartrecruiters",
+      "token": "WNSGlobalServices144"
+    },
+    {
+      "company": "Accenture",
+      "source": "workday",
+      "token": "accenture.wd103.myworkdayjobs.com|accenture|AccentureCareers"
+    },
+    {
+      "company": "Bosch Group",
+      "source": "smartrecruiters",
+      "token": "BoschGroup"
+    },
+    {
+      "company": "Okta",
+      "source": "greenhouse",
+      "token": "okta"
+    },
+    {
+      "company": "S&P Global",
+      "source": "workday",
+      "token": "spgi.wd5.myworkdayjobs.com|spgi|SPGI_Careers"
+    },
+    {
+      "company": "Morningstar",
+      "source": "workday",
+      "token": "morningstar.wd5.myworkdayjobs.com|morningstar|Americas"
+    },
+    {
+      "company": "LSEG",
+      "source": "workday",
+      "token": "lseg.wd3.myworkdayjobs.com|lseg|Careers"
+    },
+    {
+      "company": "Clarivate",
+      "source": "workday",
+      "token": "clarivate.wd3.myworkdayjobs.com|clarivate|Clarivate_Careers"
+    },
+    {
+      "company": "ERM",
+      "source": "workday",
+      "token": "erm.wd3.myworkdayjobs.com|erm|ERM_Careers"
+    },
+    {
+      "company": "ERM",
+      "source": "workday",
+      "token": "erm.wd3.myworkdayjobs.com|erm|ERM_ExperiencedProfessionals"
+    },
+    {
+      "company": "Mastercard",
+      "source": "workday",
+      "token": "mastercard.wd1.myworkdayjobs.com|mastercard|CorporateCareers"
+    },
+    {
+      "company": "Invesco",
+      "source": "workday",
+      "token": "invesco.wd1.myworkdayjobs.com|invesco|IVZ"
+    },
+    {
+      "company": "Ameriprise Financial",
+      "source": "workday",
+      "token": "ameriprise.wd5.myworkdayjobs.com|ameriprise|Ameriprise"
+    },
+    {
+      "company": "Russell Investments",
+      "source": "workday",
+      "token": "russell.wd5.myworkdayjobs.com|russell|russellinvestments"
+    },
+    {
+      "company": "Sprinklr",
+      "source": "workday",
+      "token": "sprinklr.wd1.myworkdayjobs.com|sprinklr|careers"
+    },
+    {
+      "company": "Capco",
+      "source": "greenhouse",
+      "token": "capco"
+    },
+    {
+      "company": "Genpact",
+      "source": "workday",
+      "token": "genpact.wd108.myworkdayjobs.com|genpact|External_Careers"
+    },
+    {
+      "company": "Concentrix",
+      "source": "workday",
+      "token": "cnx.wd1.myworkdayjobs.com|cnx|external_global"
+    },
+    {
+      "company": "Stripe",
+      "source": "greenhouse",
+      "token": "stripe"
+    },
+    {
+      "company": "Quantiphi",
+      "source": "workday",
+      "token": "quantiphi.wd1.myworkdayjobs.com|quantiphi|Careers_at_Quantiphi"
+    },
+    {
+      "company": "FactSet",
+      "source": "workday",
+      "token": "factset.wd108.myworkdayjobs.com|factset|FactSetCareers"
+    },
+    {
+      "company": "InMobi",
+      "source": "greenhouse",
+      "token": "inmobi"
+    },
+    {
+      "company": "BlackRock",
+      "source": "workday",
+      "token": "blackrock.wd1.myworkdayjobs.com|blackrock|BlackRock_Professional"
+    },
+    {
+      "company": "JPMorgan Chase",
+      "source": "oracle_hcm",
+      "token": "jpmc.fa.oraclecloud.com|CX_1001"
+    },
+    {
+      "company": "Microsoft",
+      "source": "eightfold",
+      "token": "apply.careers.microsoft.com|microsoft.com"
+    },
+    {
+      "company": "Citi",
+      "source": "workday",
+      "token": "citi.wd5.myworkdayjobs.com|citi|2",
+      "note": "verified by company scout 2026-11-13"
+    },
+    {
+      "company": "Nasdaq",
+      "source": "workday",
+      "token": "nasdaq.wd1.myworkdayjobs.com|nasdaq|Global_External_Site",
+      "note": "verified by company scout 2026-11-13"
+    },
+    {
+      "company": "Target",
+      "source": "workday",
+      "token": "target.wd5.myworkdayjobs.com|target|targetcareers"
+    },
+    {
+      "company": "LinkedIn (guest search)",
+      "source": "linkedin_guest",
+      "token": "profile keywords",
+      "note": "Opt-in only (-IncludeLinkedIn): LinkedIn's terms prohibit scraping. No login; small request budget; stops on throttling.",
+      "options": {
+        "pages": 2,
+        "max_requests": 40,
+        "max_details": 20
+      }
+    }
+  ],
+  "seed_urls": []
+}

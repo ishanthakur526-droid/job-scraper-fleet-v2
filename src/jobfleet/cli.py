@@ -2,8 +2,13 @@ from __future__ import annotations
 
 import argparse
 import logging
+import platform
+import re
+import shlex
+import subprocess
 import sys
 import time
+import webbrowser
 from collections import defaultdict
 from pathlib import Path
 
@@ -11,12 +16,14 @@ from . import __version__
 from .board_discovery import discover_boards_by_search, load_candidates_file, verify_company_candidates
 from .canary import run_canaries
 from .classifier import Classifier
-from .config import load_boards, load_llm_config, load_taxonomy
+from .config import expand_boards, load_boards
+from .dashboard import write_dashboard
 from .discovery import build_queries, discover_urls
 from .exporters import export_category, export_new_only, export_overflow, export_quality_tiers, export_rejected_jobs, export_review_file
 from .http import HttpClient, OfflineHttpClient
 from .llm import ClaudeRunner, clear_backoff
 from .pipeline import JobPipeline
+from .profile import ProfileError, default_profile_path, load_profile
 from .rawdump import prune_dumps, read_dump, write_dump
 from .reports import run_id, utc_now, write_health_report, write_run_report
 from .scout import run_scout
@@ -27,12 +34,13 @@ log = logging.getLogger("jobfleet")
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Job Scraper Fleet v3: India early-career analyst jobs from public career APIs.")
+    parser = argparse.ArgumentParser(description="JobFleet: your daily job list from public company career sites, driven by profile.toml.")
     parser.add_argument("--version", action="version", version=f"jobfleet {__version__}")
+    parser.add_argument("--profile", type=Path, help="search profile (default: profile.toml next to the config folder)")
     parser.add_argument("--config-dir", type=Path, default=Path("config"))
     parser.add_argument("--output-dir", type=Path, default=Path("outputs"))
     parser.add_argument("--state-dir", type=Path, help="defaults to <output-dir>/state")
-    parser.add_argument("--category", choices=["all", "data_bi", "research", "excel_mis"], default="all")
+    parser.add_argument("--category", default="all", help="run only one role family (its id in profile.toml)")
     parser.add_argument("--max-per-category", type=int, default=40)
     parser.add_argument("--per-company-cap", type=int, default=8, help="max rows per company in each main list (rest -> overflow)")
     parser.add_argument("--workers", type=int, default=8)
@@ -75,12 +83,50 @@ def setup_logging(output_dir: Path, run_id_value: str, level: str) -> Path:
     return log_path
 
 
+COMMANDS = {
+    "setup": "create or change profile.toml by answering a few questions",
+    "run": "find jobs now (the default when no command is given)",
+    "dashboard": "open the latest results in your browser",
+    "add-company": "add a company by its careers-page link",
+    "doctor": "check that everything is set up",
+    "schedule": "run JobFleet automatically every day",
+}
+
+
 def main(argv: list[str] | None = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] in ("help", "commands"):
+        print("Usage: jobfleet <command> [options]\n")
+        for name, text in COMMANDS.items():
+            print(f"  {name:12} {text}")
+        return 0
+    command = argv.pop(0) if argv and argv[0] in COMMANDS else "run"
+    if command == "setup":
+        from .setup_wizard import main as setup_main
+
+        return setup_main(argv)
+    if command == "doctor":
+        from .doctor import main as doctor_main
+
+        return doctor_main(argv)
+    if command == "add-company":
+        return add_company_command(argv)
+    if command == "schedule":
+        return schedule_command(argv)
+    if command == "dashboard":
+        return dashboard_command(argv)
+    return run_command(argv)
+
+
+def run_command(argv: list[str]) -> int:
     args = build_parser().parse_args(argv)
     run_id_value = run_id()
     log_path = setup_logging(args.output_dir, run_id_value, args.log_level)
     try:
         return run(args, run_id_value)
+    except ProfileError as exc:
+        log.error("%s", exc)
+        return 2
     except Exception:
         log.exception("Run failed; see %s", log_path)
         return 1
@@ -91,11 +137,15 @@ def run(args: argparse.Namespace, run_id_value: str) -> int:
     started_at = utc_now()
     output_dir: Path = args.output_dir
     state_dir: Path = args.state_dir or (output_dir / "state")
-    categories, adjacent = load_taxonomy(args.config_dir)
+    profile = load_profile(args.profile or default_profile_path(args.config_dir))
+    log.info("Profile: %s", profile.describe())
     if args.category != "all":
-        categories = [c for c in categories if c.id == args.category]
-    classifier = Classifier(categories, adjacent)
-    llm_config = load_llm_config(args.config_dir)
+        if args.category not in profile.family_ids:
+            raise ProfileError(f"--category {args.category}: no such role family. Choose one of: {', '.join(profile.family_ids)}.")
+        profile.families = [f for f in profile.families if f.id == args.category]
+    categories, adjacent = profile.families, profile.adjacent
+    classifier = Classifier.from_profile(profile)
+    llm_config = profile.ai
     use_llm = bool(llm_config.get("enabled", True)) and not args.skip_llm and not args.replay
     state = StateStore(state_dir / "jobfleet.sqlite")
     if args.force_scout:
@@ -112,10 +162,18 @@ def run(args: argparse.Namespace, run_id_value: str) -> int:
         board_budget_s=args.board_budget,
         max_per_category=args.max_per_category,
         per_company_cap=args.per_company_cap,
+        countries=tuple(profile.country_codes),
+        keywords=tuple(profile.search_keywords),
+        level=profile.level,
     )
-    boards, seed_urls = load_boards(args.config_dir)
-    if not args.include_linkedin:
-        boards = [b for b in boards if b.source != "linkedin_guest"]
+
+    def company_list() -> tuple[list, list[str]]:
+        loaded, seeds = load_boards(args.config_dir)
+        if not args.include_linkedin:
+            loaded = [b for b in loaded if b.source != "linkedin_guest"]
+        return expand_boards(loaded, profile.country_codes, profile.search_keywords), seeds
+
+    boards, seed_urls = company_list()
     runner = ClaudeRunner(
         output_dir / "llm_sandbox",
         configured_exe=str(llm_config.get("claude_exe") or ""),
@@ -132,19 +190,21 @@ def run(args: argparse.Namespace, run_id_value: str) -> int:
             result = verify_company_candidates(args.config_dir, output_dir, load_candidates_file(args.company_candidates), http, classifier, boards, state)
             log.info("Candidate verification: %s added, %s checked (%s)", len(result.added), result.verified, result.report_path)
         if args.discover_boards:
-            queries = [f'site:{site} "{q}"' for q in ("Data Analyst India", "MIS Analyst India", "Research Analyst India") for site in ("jobs.lever.co", "boards.greenhouse.io", "jobs.ashbyhq.com", "myworkdayjobs.com")]
+            place = profile.countries[0] if profile.countries else "remote"
+            phrases = [f"{keyword} {place}" for keyword in profile.search_keywords[:3]]
+            sites = ("jobs.lever.co", "boards.greenhouse.io", "jobs.ashbyhq.com", "myworkdayjobs.com")
+            queries = [f'site:{site} "{phrase}"' for phrase in phrases for site in sites]
             result = discover_boards_by_search(args.config_dir, output_dir, http, classifier, boards, queries, state)
             log.info("Board discovery: %s added, %s checked", len(result.added), result.verified)
         if args.company_candidates or args.discover_boards:
-            boards, seed_urls = load_boards(args.config_dir)
-            if not args.include_linkedin:
-                boards = [b for b in boards if b.source != "linkedin_guest"]
+            boards, seed_urls = company_list()
         quarantined = state.quarantined()
         log.info("Collecting from %s boards (%s quarantined) with %s workers...", len(boards), len(quarantined), args.workers)
         jobs, health = pipeline.collect_from_boards(boards, quarantined)
         urls = list(seed_urls)
         if args.include_search:
-            queries = [q for c in categories for q in build_queries(c.name, [r if isinstance(r, str) else r.get("title", "") for r in c.target_roles])]
+            place = profile.countries[0] if profile.countries else ""
+            queries = [q for c in categories for q in build_queries(c.name, [r if isinstance(r, str) else r.get("title", "") for r in c.target_roles], place)]
             urls.extend(discover_urls(http, queries))
         if urls:
             extra_jobs, extra_health = pipeline.collect_from_urls(urls)
@@ -161,7 +221,7 @@ def run(args: argparse.Namespace, run_id_value: str) -> int:
     buckets = pipeline.build(evaluations)
     llm_stats: dict[str, str] = {}
     if use_llm and not args.skip_triage:
-        llm_stats["Triage"] = run_triage(runner, buckets, state, llm_config, output_dir)
+        llm_stats["Triage"] = run_triage(runner, buckets, state, llm_config, output_dir, profile)
         log.info("Claude triage: %s", llm_stats["Triage"])
 
     state.record_results(buckets.recorded())
@@ -197,10 +257,12 @@ def run(args: argparse.Namespace, run_id_value: str) -> int:
 
     if use_llm and not args.skip_scout:
         broken = sorted({h.company for h in health if h.status == "quarantined" or (h.status == "failed" and h.hard_failure)})
-        llm_stats["Company scout"] = run_scout(runner, args.config_dir, output_dir, state, http, classifier, boards, llm_config, broken, force=args.force_scout)
+        llm_stats["Company scout"] = run_scout(
+            runner, args.config_dir, output_dir, state, http, classifier, boards, llm_config, broken, force=args.force_scout, profile=profile
+        )
         log.info("Company scout: %s", llm_stats["Company scout"])
     elif not use_llm:
-        llm_stats["Claude"] = "skipped (--skip-llm, replay, or disabled in config)"
+        llm_stats["Claude"] = "skipped (--skip-llm, replay, or [ai] enabled = false in profile.toml)"
 
     write_health_report(output_dir, run_id_value, health)
     stats = {
@@ -214,9 +276,64 @@ def run(args: argparse.Namespace, run_id_value: str) -> int:
         "_llm": llm_stats,
     }
     json_path, summary_path = write_run_report(output_dir, run_id_value, categories, buckets, new_rows, health, stats)
+    dashboard = write_dashboard(output_dir, profile, buckets, health, stats)
     state.export_csv_views(state_dir)
     state.close()
     log.info("Done in %.0fs. Summary: %s", time.monotonic() - started, summary_path)
+    log.info("Dashboard: %s (open it in any browser, or run `jobfleet dashboard`)", dashboard.resolve())
+    return 0
+
+
+def add_company_command(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="jobfleet add-company", description="Add a company by its careers-page or job-board link.")
+    parser.add_argument("url")
+    parser.add_argument("--name", default="", help="company name to show in your lists")
+    parser.add_argument("--config-dir", type=Path, default=Path("config"))
+    parser.add_argument("--no-check", action="store_true", help="save without checking the board")
+    args = parser.parse_args(argv)
+    from .companies import add_company, default_path
+
+    classifier = None
+    if not args.no_check:
+        try:
+            classifier = Classifier.from_profile(load_profile(default_profile_path(args.config_dir)))
+        except ProfileError:
+            classifier = None
+    return add_company(args.url, args.name, default_path(args.config_dir), HttpClient(), classifier)
+
+
+def schedule_command(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="jobfleet schedule", description="Run JobFleet automatically on weekdays.")
+    parser.add_argument("--time", default="16:00", help="time of day, 24h HH:MM (default 16:00)")
+    parser.add_argument("--name", default="JobFleet daily", help="Windows Task Scheduler task name")
+    args = parser.parse_args(argv)
+    if not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", args.time):
+        print("--time must look like 09:30 or 16:00")
+        return 2
+    root = Path.cwd()
+    if platform.system() == "Windows":
+        script = root / "install_scheduled_task.ps1"
+        if not script.exists():
+            print(f"Run this from the JobFleet folder ({script.name} not found here).")
+            return 2
+        command = ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script), "-TaskName", args.name, "-StartTime", args.time]
+        return subprocess.call(command)
+    hour, minute = args.time.split(":")
+    print("Add this line with `crontab -e` to run on weekdays:\n")
+    print(f"{int(minute)} {int(hour)} * * 1-5 cd {shlex.quote(str(root))} && ./run.sh >> outputs/logs/cron.log 2>&1")
+    return 0
+
+
+def dashboard_command(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="jobfleet dashboard", description="Open the latest results in your browser.")
+    parser.add_argument("--output-dir", type=Path, default=Path("outputs"))
+    args = parser.parse_args(argv)
+    page = args.output_dir / "dashboard.html"
+    if not page.exists():
+        print(f"No dashboard yet ({page}). Run JobFleet first: Run.bat or `jobfleet run`.")
+        return 1
+    webbrowser.open(page.resolve().as_uri())
+    print(f"Opened {page}")
     return 0
 
 
