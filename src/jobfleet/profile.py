@@ -110,6 +110,22 @@ class Profile:
         domains = [DOMAINS[d].description.lower() for d in self.rules.excluded_domains if d in DOMAINS]
         return "; ".join(x for x in (", ".join(levels), ", ".join(domains)) if x)
 
+    def conditional_text(self) -> str:
+        """Seniority words that are fine when the posting's experience range fits (e.g. "Deputy Manager" for 0-3 years)."""
+        from .levels import LEVEL_3_PLUS, LEVELS
+
+        parts = []
+        for name, action in self.rules.level_actions.items():
+            if action != "conditional":
+                continue
+            if name == LEVEL_3_PLUS:
+                parts.append("level III and above titles (e.g. Analyst III)")
+            elif name == "senior" and self.rules.senior_only_for:
+                parts.append(f"Senior {'/'.join(w.title() for w in self.rules.senior_only_for)} titles")
+            elif name in LEVELS:
+                parts.append(LEVELS[name].description)
+        return "; ".join(parts)
+
 
 def _fmt(value: float) -> str:
     return str(int(value)) if float(value).is_integer() else f"{value:g}"
