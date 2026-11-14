@@ -320,12 +320,17 @@ class StateStore:
         return json.loads(row["payload"]) if row else None
 
     # ---------------------------------------------------------- exports
-    def export_csv_views(self, state_dir: Path) -> list[Path]:
+    def export_csv_views(self, state_dir: Path, output_dir: Path | None = None) -> list[Path]:
         from .exporters import write_csv  # local import to avoid a cycle
 
         rows = [dict(row) for row in self.db.execute("SELECT * FROM jobs ORDER BY key").fetchall()]
         history = [_history_row(row) for row in rows]
-        written = [
+        written = []
+        if output_dir is not None:
+            # The rolling ledger for people: every job ever listed, most recently seen first, opens cleanly in Excel.
+            ledger = sorted(history, key=lambda r: (r["Last Seen At"] or "", r["First Seen At"] or ""), reverse=True)
+            written.append(write_csv(output_dir / "job_history.csv", LEDGER_COLUMNS, map(_ledger_row, ledger)))
+        written += [
             write_csv(state_dir / "job_history.csv", HISTORY_COLUMNS, history, bom=False),
             write_csv(
                 state_dir / "expired_or_missing_jobs.csv",
@@ -335,6 +340,22 @@ class StateStore:
             ),
         ]
         return [path for path in written if path is not None]
+
+
+LEDGER_COLUMNS = [
+    "Still Open", "Company", "Exact Role Name", "Family", "Location", "Experience Required", "Application Link",
+    "First Seen", "Last Seen", "Posted", "Tier", "Score", "Source",
+]
+
+
+def _ledger_row(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "Still Open": "yes" if row["Active"] == "yes" else "no",
+        "Company": row["Company"], "Exact Role Name": row["Exact Role Name"], "Family": row["Category"],
+        "Location": row["Location"], "Experience Required": row["Experience Required"], "Application Link": row["Application Link"],
+        "First Seen": (row["First Seen At"] or "")[:10], "Last Seen": (row["Last Seen At"] or "")[:10],
+        "Posted": row["Posted Date"], "Tier": row["Quality Tier"], "Score": row["Score"], "Source": row["Source"],
+    }
 
 
 def _history_row(row: dict[str, Any]) -> dict[str, Any]:

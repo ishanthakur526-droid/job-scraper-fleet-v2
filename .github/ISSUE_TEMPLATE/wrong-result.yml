@@ -16,7 +16,7 @@ body:
     id: what
     attributes:
       label: What happened and what you expected
-      description: If the job was rejected, paste its line from outputs/audit/rejected_jobs_today.csv (it includes the reason).
+      description: If the job was rejected, paste its line from outputs/audit/rejected_jobs.csv (it includes the reason).
     validations: { required: true }
   - type: textarea
     id: profile

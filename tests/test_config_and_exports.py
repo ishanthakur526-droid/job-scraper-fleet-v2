@@ -33,11 +33,12 @@ def test_load_boards_merges_discovered_and_skips_disabled(tmp_path):
 
 
 def test_main_csv_keeps_legacy_columns_first_and_has_bom(tmp_path):
-    category = Category(id="data_bi", name="Data & BI", output="data_bi_roles_today.csv")
+    category = Category(id="data_bi", name="Data & BI", output="data_bi.csv")
     item = JobResult(company="Zoë Analytics", title="Data Analyst – Insights", experience_required="1-3 years", url="https://x/1",
                      system_notes="", category_id="data_bi", score=80, source="lever", location="Pune", matched_terms=[], retrieved_at="",
                      quality_tier="high_confidence", posted_date="2026-11-12", first_seen="2026-11-13T10:00:00+00:00")
-    legacy, _audit = export_category(tmp_path, category, [item])
+    legacy, audit = export_category(tmp_path, category, [item])
+    assert (legacy.name, audit.relative_to(tmp_path).as_posix()) == ("data_bi.csv", "audit/data_bi.csv")
     raw = legacy.read_bytes()
     assert raw.startswith(b"\xef\xbb\xbf")  # Excel needs the BOM to show non-ASCII text correctly
     header = raw.decode("utf-8-sig").splitlines()[0].split(",")

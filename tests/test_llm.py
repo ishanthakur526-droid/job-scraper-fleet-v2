@@ -69,7 +69,7 @@ def test_triage_promotes_demotes_and_caches(tmp_path):
     assert "1 promoted, 1 demoted" in summary
     assert [r.key for r in buckets.main["research"]] == ["p1"] and buckets.main["research"][0].quality_tier == "claude_promoted"
     assert [r.key for r in buckets.main["data_bi"]] == ["m2"]  # high-confidence rows are never sent
-    assert (tmp_path / "audit" / "claude_triage_today.csv").exists()
+    assert (tmp_path / "audit" / "claude_review.csv").exists()
     second = FakeRunner(ClaudeResult(True, data={"verdicts": []}))
     run_triage(second, RunBuckets(main={"data_bi": [row("m1")]}, possible={}), state, {"triage": {}}, tmp_path)
     assert second.calls == 0  # verdict cached

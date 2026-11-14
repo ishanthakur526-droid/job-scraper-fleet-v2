@@ -19,7 +19,16 @@ from .classifier import Classifier
 from .config import expand_boards, load_boards
 from .dashboard import write_dashboard
 from .discovery import build_queries, discover_urls
-from .exporters import export_category, export_new_only, export_overflow, export_quality_tiers, export_rejected_jobs, export_review_file
+from .exporters import (
+    JOB_BOARD_FINDS_FILE,
+    RELATED_ROLES_FILE,
+    export_category,
+    export_new_only,
+    export_overflow,
+    export_rejected_jobs,
+    export_review_file,
+    export_worth_a_look,
+)
 from .http import HttpClient, OfflineHttpClient
 from .llm import ClaudeRunner, clear_backoff
 from .pipeline import JobPipeline
@@ -240,15 +249,15 @@ def run(args: argparse.Namespace, run_id_value: str) -> int:
         new_rows[category.id] = [row for row in current + overflow if row.is_new]
         export_category(output_dir, category, current)
         export_new_only(output_dir, category, new_rows[category.id])
-        export_quality_tiers(output_dir, category, current, buckets.possible.get(category.id, []))
+        export_worth_a_look(output_dir, category, buckets.possible.get(category.id, []))
         export_overflow(output_dir, category, overflow)
         log.info(
             "%-12s %3d current (%d new), %d overflow, %d possible",
             category.name, len(current), len(new_rows[category.id]), len(overflow), len(buckets.possible.get(category.id, [])),
         )
     if adjacent:
-        export_review_file(output_dir / adjacent.output, buckets.adjacent)
-    export_review_file(output_dir / "aggregator_review_today.csv", buckets.aggregator)
+        export_review_file(output_dir / RELATED_ROLES_FILE, buckets.adjacent)
+    export_review_file(output_dir / JOB_BOARD_FINDS_FILE, buckets.aggregator)
     export_rejected_jobs(output_dir, buckets.rejected)
     canaries = [] if (args.replay or args.no_canaries) else run_canaries(http, [r for rows in buckets.main.values() for r in rows] + buckets.adjacent, output_dir)
     for row in canaries:
@@ -277,7 +286,7 @@ def run(args: argparse.Namespace, run_id_value: str) -> int:
     }
     json_path, summary_path = write_run_report(output_dir, run_id_value, categories, buckets, new_rows, health, stats)
     dashboard = write_dashboard(output_dir, profile, buckets, health, stats)
-    state.export_csv_views(state_dir)
+    state.export_csv_views(state_dir, output_dir)
     state.close()
     log.info("Done in %.0fs. Summary: %s", time.monotonic() - started, summary_path)
     log.info("Dashboard: %s (open it in any browser, or run `jobfleet dashboard`)", dashboard.resolve())

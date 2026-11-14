@@ -107,4 +107,13 @@ def test_csv_views_survive_a_locked_file(tmp_path, monkeypatch):
 
     monkeypatch.setattr(os, "replace", locked)
     written = state.export_csv_views(tmp_path)
-    assert any(p.name == "job_history_new.csv" for p in written)
+    assert any(p.name == "job_history_copy.csv" for p in written)
+
+
+def test_people_facing_ledger_is_written_to_outputs(tmp_path):
+    state = StateStore(tmp_path / "s.sqlite")
+    state.record_results([result("lever:1")])
+    out = tmp_path / "outputs"
+    state.export_csv_views(tmp_path / "state", out)
+    ledger = (out / "job_history.csv").read_text(encoding="utf-8-sig").splitlines()
+    assert ledger[0].startswith("Still Open,Company,Exact Role Name,Family") and ledger[1].startswith("yes,")
